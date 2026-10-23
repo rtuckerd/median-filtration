@@ -1,0 +1,2247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Median Hull of the Diagonal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --bg: #f3f5f9;
+    --panel: #ffffff;
+    --ink: #16233b;
+    --muted: #5a6477;
+    --rule: #d6dce7;
+    --focus: #2f6fd6;
+    --vtx: #1e3255;
+    --edge: #1e3255;
+    --t1: #2563eb;
+    --t2: #0f9d6e;
+    --t3: #7c3aed;
+    --ng: #db2777;
+    --gen: #e4572e;
+    --cell: #bcd3f1;
+    --cell-a: 0.5;
+    --tilt: #f4bfd6;
+    --tilt-a: 0.6;
+    --diag: #98a1b3;
+    --lat: #8792a6;
+    --hyp: #a16207;
+    --hyp-halo: rgba(250, 204, 21, 0.55);
+    --t1-neon: #0050ff;
+    --t2-neon: #00b865;
+    --t3-neon: #8a1cff;
+    --ng-neon: #ff0a78;
+    --edge-neon: #1f35ff;
+    --serif: "STIX Two Text", "STIX Two Math", "Cambria Math", "Times New Roman", serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0c111c;
+      --panel: #111a2a;
+      --ink: #e3e9f4;
+      --muted: #97a3b8;
+      --rule: #263149;
+      --focus: #7aa7f5;
+      --vtx: #cad6ec;
+      --edge: #cad6ec;
+      --t1: #6ea8ff;
+      --t2: #3fd39b;
+      --t3: #b39afc;
+      --ng: #f472b6;
+      --gen: #ff8a4c;
+      --cell: #4f78b8;
+      --cell-a: 0.34;
+      --tilt: #b04a80;
+      --tilt-a: 0.42;
+      --diag: #5d6982;
+      --lat: #74839f;
+      --hyp: #fde047;
+      --hyp-halo: rgba(250, 204, 21, 0.5);
+      --t1-neon: #3d9bff;
+      --t2-neon: #1dffa0;
+      --t3-neon: #c886ff;
+      --ng-neon: #ff4fb4;
+      --edge-neon: #e4f2ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0c111c;
+    --panel: #111a2a;
+    --ink: #e3e9f4;
+    --muted: #97a3b8;
+    --rule: #263149;
+    --focus: #7aa7f5;
+    --vtx: #cad6ec;
+    --edge: #cad6ec;
+    --t1: #6ea8ff;
+    --t2: #3fd39b;
+    --t3: #b39afc;
+    --ng: #f472b6;
+    --gen: #ff8a4c;
+    --cell: #4f78b8;
+    --cell-a: 0.34;
+    --tilt: #b04a80;
+    --tilt-a: 0.42;
+    --diag: #5d6982;
+    --lat: #74839f;
+    --hyp: #fde047;
+    --hyp-halo: rgba(250, 204, 21, 0.5);
+    --t1-neon: #3d9bff;
+    --t2-neon: #1dffa0;
+    --t3-neon: #c886ff;
+    --ng-neon: #ff4fb4;
+    --edge-neon: #e4f2ff;
+  }
+
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--sans); padding-inline: 16px; }
+  .app {
+    box-sizing: border-box; height: 100%; max-width: 1240px; margin: 0 auto; padding-block: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+  .titles { display: grid; gap: 4px; flex: 1 1 34rem; min-width: 0; }
+  h1 { margin: 0; font: 600 1.6rem/1.15 var(--serif); letter-spacing: 0.005em; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); max-width: 80ch; }
+  .credit { margin: 0; font-size: 13px; color: var(--muted); }
+  .math { font-family: var(--serif); font-size: 1.08em; }
+  .mono { font-family: var(--mono); font-size: 0.95em; }
+  .look { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  select {
+    font: 500 13.5px/1.2 var(--sans); color: var(--ink); background-color: var(--panel);
+    border: 1px solid var(--rule); border-radius: 8px; padding: 7px 8px; max-width: 15.5rem; cursor: pointer;
+  }
+  select:hover { border-color: var(--muted); }
+  select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .custom {
+    flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 12px;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+  }
+  .custom[hidden] { display: none; }
+  .custom label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .custom input[type="color"] {
+    inline-size: 30px; block-size: 24px; padding: 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); cursor: pointer;
+  }
+  .custom input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  .custom input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 4px; }
+  .custom input[type="color"]::-moz-color-swatch { border: 0; border-radius: 4px; }
+  .custom .note { flex: 1 1 100%; margin: 0; font-size: 12.5px; color: var(--muted); }
+  sub { font-size: 0.72em; line-height: 0; }
+
+  .guide {
+    display: grid; gap: 6px; max-width: 100ch; padding: 12px 16px; font-size: 14.5px;
+    background: var(--panel); border: 1px solid var(--rule); border-left: 3px solid var(--focus); border-radius: 10px;
+  }
+  .guide h2 { margin: 0; font: 600 15.5px/1.3 var(--sans); }
+  .guide p, .guide ol { margin: 0; }
+  .guide ol { display: grid; gap: 3px; padding-left: 1.5em; }
+  .guide b { font-weight: 600; }
+  .guide cite { font-style: italic; }
+  a { color: inherit; text-decoration: underline; text-decoration-color: var(--focus); text-underline-offset: 2px; }
+  a:hover { color: var(--focus); }
+  .guide .note { color: var(--muted); font-size: 13.5px; }
+  .key {
+    display: inline-grid; place-items: center; width: 1.7em; height: 1.4em; vertical-align: -0.3em;
+    border: 1px solid var(--rule); border-radius: 6px; background: var(--bg);
+  }
+  .key svg { width: 0.8em; height: 0.8em; fill: currentColor; }
+  .controls { display: grid; gap: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; }
+  .seg button + button { border-left: 1px solid var(--rule); }
+  button {
+    font: 500 13.5px/1 var(--sans); color: var(--ink); background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .field { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--muted); }
+  .field input[type="range"] { width: 130px; accent-color: var(--focus); }
+  .field input.short[type="range"] { width: 84px; }
+  .field input.long[type="range"] { width: 180px; }
+  #cutOut { min-width: 7.5ch; }
+  .cutinfo { flex: 1 1 18em; min-width: 0; font-size: 13px; line-height: 1.15; color: var(--muted); }
+  .field output { font: 12.5px var(--mono); color: var(--ink); min-width: 3.4ch; font-variant-numeric: tabular-nums; }
+  .field input[type="number"] {
+    width: 7ch; font: 13px var(--mono); color: var(--ink); background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 8px; padding: 6px 8px;
+  }
+  .gap { flex: 1 1 0; min-width: 0; }
+  #diffOut { min-width: 6.2ch; }
+  .steps button { padding: 6px 11px; font-size: 16px; line-height: 1; }
+  button.icon { padding: 7px 10px; line-height: 0; }
+  button.icon svg { width: 14px; height: 14px; fill: currentColor; }
+  button:disabled { opacity: 0.45; cursor: default; }
+
+  .stage {
+    position: relative; flex: 1 1 auto; min-height: 400px;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden;
+  }
+  .stage:has(:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #view { touch-action: none; cursor: grab; outline: none; }
+  #view.dragging { cursor: grabbing; }
+  #view.panning { cursor: move; }
+  .hint { position: absolute; left: 12px; right: 52px; top: 10px; margin: 0; font-size: 12.5px; color: var(--muted); pointer-events: none; }
+  .fsbtn { position: absolute; top: 8px; right: 8px; padding: 6px; line-height: 0; color: var(--muted); }
+  .fsbtn:hover, .fsbtn[aria-pressed="true"] { color: var(--ink); background: var(--panel); border-color: var(--muted); }
+  .fsbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .grip {
+    position: absolute; left: 50%; bottom: 0; width: 120px; height: 16px; margin-left: -60px;
+    display: grid; place-items: center; cursor: ns-resize; touch-action: none;
+  }
+  .grip::before { content: ""; width: 44px; height: 5px; border-radius: 3px; background: var(--rule); }
+  .grip:hover::before, .grip:focus-visible::before { background: var(--muted); }
+  .grip:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; border-radius: 8px; }
+  .stage.sized { flex: none; min-height: 0; }
+  .app.full {
+    position: fixed; inset: 0; z-index: 20; max-width: none; height: auto; margin: 0; padding: 10px 16px; background: var(--bg);
+  }
+  .app.full > header, .app.full > .xpanel, .app.full > footer, .app.full .grip { display: none; }
+  .app.full .stage { flex: 1 1 auto !important; height: auto !important; min-height: 0 !important; }
+  html.fullview, html.fullview body { overflow: hidden; }
+  .hint .coarse { display: none; }
+  @media (pointer: coarse) { .hint .fine { display: none; } .hint .coarse { display: inline; } }
+  .tip {
+    position: absolute; pointer-events: none; font: 12.5px/1.2 var(--mono);
+    background: var(--ink); color: var(--panel); padding: 5px 7px; border-radius: 6px; white-space: nowrap;
+  }
+
+  .xpanel { display: grid; gap: 4px; }
+  .xhead { font-size: 13px; color: var(--muted); }
+  .xhead .step { color: var(--ink); }
+  .xstage {
+    position: relative; height: 120px; background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 10px; overflow: hidden;
+  }
+  #xview { cursor: crosshair; }
+
+  footer { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 0; padding: 0; list-style: none; }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { display: inline-block; flex: none; }
+  .sw.dot { width: 10px; height: 10px; border-radius: 50%; }
+  .sw.dot.small { width: 7px; height: 7px; }
+  .sw.line { width: 18px; height: 0; border-top: 2.5px solid; }
+  .sw.sq { width: 12px; height: 12px; border-radius: 2px; }
+  .sw.dash { width: 18px; height: 0; border-top: 2px dashed; }
+  .sw.hyp { width: 18px; height: 0; border-top: 2px solid; box-shadow: 0 0 0 3px var(--hyp-halo); border-radius: 2px; }
+  .sw.line.faint { opacity: 0.45; }
+  [hidden] { display: none !important; }
+  .stats { margin: 0; font-family: var(--mono); font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .help { display: grid; gap: 6px; max-width: 110ch; font-size: 14px; }
+  .help h2 { margin: 0; font: 600 15px/1.3 var(--sans); color: var(--ink); }
+  .help ul { display: grid; gap: 5px; margin: 0; padding-left: 1.2em; }
+  .help .grp { font-weight: 600; color: var(--ink); }
+  .help b { font-weight: 500; color: var(--ink); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 1.3rem; }
+    .app.full > .controls { display: none; }
+    .stage { min-height: 58vh; }
+    .gap { display: none; }
+    .field input[type="range"] { width: 110px; }
+    .field input.long[type="range"] { width: 150px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="titles">
+      <h1>The median hull of the diagonal in a product of trees</h1>
+      <p class="lede">Random trees on one finite vertex set <span class="math">X</span>, their box product on <span class="math">X<sup id="kSup">2</sup></span>, and the median algebra <span class="math">⟨Δ<sub>X</sub>⟩</span> generated by the diagonal, drawn as its median graph. This is a depiction of the construction in Theorem 4.1 of Chen, Tserunyan and Tucker-Drob, <cite>Finite index extensions of treeable equivalence relations are treeable</cite>, <a href="https://arxiv.org/abs/2610.08986">arXiv:2610.08986</a>.</p>
+      <p class="credit">This app was made using Claude Opus 5.5.</p>
+    </div>
+    <div class="look" role="group" aria-label="Colors">
+      <label class="field" for="scheme">Colors <select id="scheme"></select></label>
+      <div class="seg steps" role="group" aria-label="Step through the color schemes">
+        <button type="button" id="schemePrev" aria-label="Previous color scheme" title="Previous color scheme">‹</button>
+        <button type="button" id="schemeNext" aria-label="Next color scheme" title="Next color scheme">›</button>
+      </div>
+      <button type="button" id="customise" aria-pressed="false" aria-controls="custom" title="Choose your own colors, starting from the scheme shown">Customize</button>
+    </div>
+    <div class="custom" id="custom" role="group" aria-label="Your own colors" hidden>
+      <p class="note" id="customNote">Changing a color here makes a Custom scheme from the one shown (replacing any earlier one), kept in this browser; the list above switches back to any scheme.</p>
+    </div>
+  </header>
+
+  <section class="guide" aria-labelledby="guideHead">
+    <h2 id="guideHead">Suggested settings</h2>
+    <p>The defaults work well, with 2 or 3 trees. With 3 trees, turn <b>Ambient</b> down to 40% or lower (or off).</p>
+    <p>To watch the construction stage by stage:</p>
+    <ol>
+      <li>Drag <b>Cutoff</b> to 1.</li>
+      <li>Press <span class="key" role="img" aria-label="play"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.8 8z"/></svg></span> next to it to step through the stages, about one a second, or move the slider yourself.</li>
+    </ol>
+    <p>Click <b>New seed</b> for a different collection of trees.</p>
+    <p class="note">At cutoff <span class="math">n</span>, the components of the drawing are the classes of <span class="math">P<sub>n</sub></span> from Theorem 4.1. The highlighted hyperplanes separate the components of the previous stage without cutting through any of them.</p>
+  </section>
+
+  <section class="controls" aria-label="Controls">
+    <div class="row">
+      <div class="seg" role="group" aria-label="Number of trees">
+        <button type="button" id="k2" aria-pressed="true">2 trees</button>
+        <button type="button" id="k3" aria-pressed="false">3 trees</button>
+      </div>
+      <div class="seg" role="group" aria-label="Kind of trees">
+        <button type="button" id="shapeTrees" aria-pressed="false">Branching</button>
+        <button type="button" id="shapePaths" aria-pressed="true">Paths</button>
+      </div>
+      <label class="field" for="n"><span class="math">|X|</span>
+        <input type="range" class="long" id="n" min="4" max="300" step="1" value="51"><output id="nOut" for="n">51</output></label>
+      <label class="field" for="diff" title="Up to 75%: the share of edge weights redrawn for the other trees. Above 75%: the other trees' copies of X also move toward independent ones, and at 100% the trees are independent. The arrow keys step through the changes one at a time.">Difference
+        <input type="range" id="diff" min="0" max="100" step="any" value="90.72"><output id="diffOut" for="diff">90.72%</output></label>
+      <div class="seg steps" role="group" aria-label="Step through the changes of the trees">
+        <button type="button" id="diffPrev" aria-label="Previous change of the trees" title="Back to the previous change of the trees (← on the Difference slider)">‹</button>
+        <button type="button" id="diffNext" aria-label="Next change of the trees" title="On to the next change of the trees (→ on the Difference slider)">›</button>
+      </div>
+      <span class="gap"></span>
+      <label class="field" for="seed">Seed <input type="number" id="seed" min="1" max="999999" step="1" value="43290"></label>
+      <button type="button" id="newSeed">New seed</button>
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="What to show">
+        <button type="button" id="showHull" aria-pressed="true"><span class="math">⟨Δ<sub>X</sub>⟩</span></button>
+        <button type="button" id="showDiag" aria-pressed="false"><span class="math">Δ<sub>X</sub></span> only</button>
+      </div>
+      <button type="button" id="genDots" aria-pressed="true" title="Draw the points of Δ_X as large dots; switched off, they are drawn like the other points of ⟨Δ_X⟩">Highlight <span class="math">Δ<sub>X</sub></span></button>
+      <button type="button" id="squares" aria-pressed="true">Squares</button>
+      <button type="button" id="byTree" aria-pressed="true">Color by tree</button>
+      <button type="button" id="pin" aria-pressed="false" title="Draw every axis from X itself rather than from the tree&#8217;s own copy of X, so the diagonal points stay on the dashed line (shown only with this on). Above 75% the other trees&#8217; edges then join points that are far apart in X, so they get long."><span class="math">Δ<sub>X</sub></span> on the diagonal</button>
+      <button type="button" id="even" aria-pressed="true" title="Place the points along each axis one gap apart, in the left-to-right order of the copy of X that the axis uses, instead of at the copy&#8217;s own positions, so that no edge is much shorter than the others">Even spacing</button>
+      <label class="field" for="unfold" title="Moves apart branches that overlap in plain product coordinates">Unfold
+        <input type="range" class="short" id="unfold" min="0" max="100" step="1" value="0"><output id="unfoldOut" for="unfold">0%</output></label>
+      <label class="field" for="vivid" title="Makes the edges of ⟨Δ_X⟩ stand out: toward 100% their colors turn neon, they get a soft glow and a little thicker, and far edges fade less">Vivid edges
+        <input type="range" class="short" id="vivid" min="0" max="100" step="1" value="50"><output id="vividOut" for="vivid">50%</output></label>
+    </div>
+    <div class="row">
+      <label class="field" for="amb" title="Fades in the ambient box product; from 50% on its edges get stronger">Ambient
+        <input type="range" class="short" id="amb" min="0" max="100" step="1" value="100"><output id="ambOut" for="amb">100%</output></label>
+      <label class="field" for="pts" title="How prominent the vertices of the ambient product are, from not shown at 0% up to 100%; they fade in and out with Ambient">Vertices
+        <input type="range" class="short" id="pts" min="0" max="100" step="1" value="50"><output id="ptsOut" for="pts">50%</output></label>
+      <label class="field" for="reach" title="How much of the ambient product to show: its vertices within this many steps of ⟨Δ_X⟩; the right end, all, adds the blocks that miss the diagonal">Ambient reach
+        <input type="range" class="short" id="reach" min="1" max="1" step="1" value="1"><output id="reachOut" for="reach">1</output></label>
+      <span class="gap"></span>
+      <button type="button" id="spin" aria-pressed="false">Spin</button>
+      <button type="button" id="special">Top view</button>
+      <button type="button" id="reset">Reset view</button>
+    </div>
+    <div class="row">
+      <label class="field" for="cut" title="The n-th cutoff forest of each tree keeps the edges whose endpoints are within distance n in every other tree. Below the largest such distance (the right end), the drawing shows the subalgebra generated by the diagonal points of each component of the product of these forests that meets the diagonal.">Cutoff <span class="math">n</span>
+        <input type="range" class="long" id="cut" min="1" max="1" step="1" value="1"><output id="cutOut" for="cut">1 of 1</output></label>
+      <button type="button" class="icon" id="cutPlay" aria-pressed="false" aria-label="Step the cutoff up" title="Step the cutoff up through the values where the drawing changes, about one a second, from the bottom when it is at the top. Press again to stop."><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.8 8z"/></svg></button>
+      <button type="button" id="sep" aria-pressed="true" title="Highlight the hyperplanes of the drawing that separate components of the cutoff one lower and cut through none of them (at cutoff 1: points of the diagonal)">Invariantly separating hyperplanes</button>
+      <span class="cutinfo" id="cutInfo"></span>
+    </div>
+  </section>
+
+  <div class="stage" id="stage">
+    <canvas id="view" tabindex="0" role="img" aria-label="Rotatable drawing of the median hull of the diagonal. Arrow keys rotate, Shift with the arrow keys pans, plus and minus zoom, 0 resets the view."></canvas>
+    <p class="hint"><span class="fine">Drag to rotate · Shift-drag to pan · scroll to zoom · double-click to reset</span><span class="coarse">Drag to rotate · two fingers to pan and zoom</span></p>
+    <button type="button" class="fsbtn" id="full" aria-pressed="false" aria-label="Full screen" title="Full screen: just the controls and the drawing (Esc to leave)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+    <div class="grip" id="grip" role="separator" aria-orientation="horizontal" aria-label="Height of the drawing" aria-valuemin="260" tabindex="0" title="Drag to change the height of the drawing; double-click for the default height"></div>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+
+  <section class="xpanel" aria-label="The vertex set and its trees">
+    <div class="xhead" id="xhead" aria-live="polite"><span class="math">X</span> and its trees, numbered left to right. Hover a point above to see its coordinates here, or hover a point of <span class="math">X</span> to find it on the diagonal.</div>
+    <div class="xstage" id="xstage"><canvas id="xview" role="img" aria-label="The point set X with the trees drawn on it"></canvas></div>
+  </section>
+
+  <footer>
+    <ul class="legend" id="legend"></ul>
+    <p class="stats" id="stats"></p>
+    <section class="help" aria-labelledby="helpHead">
+      <h2 id="helpHead">Controls</h2>
+      <ul>
+        <li><span class="grp">Trees:</span> <b>2 trees / 3 trees</b>; <b>Branching / Paths</b> (the shape of the trees); <b><span class="math">|X|</span></b> (the number of points); <b>Difference</b> (from identical trees at 0% to independent ones at 100%, with ‹ › jumping to the previous or next change of the trees); <b>New seed</b> (a new random collection of trees).</li>
+        <li><span class="grp">Drawing:</span> <b><span class="math">⟨Δ<sub>X</sub>⟩</span> / <span class="math">Δ<sub>X</sub></span> only</b> (the whole algebra or just the diagonal); <b>Highlight <span class="math">Δ<sub>X</sub></span></b> (large dots for the diagonal points); <b>Squares</b> (filled in); <b>Color by tree</b> (each edge in the color of the tree it moves along); <b><span class="math">Δ<sub>X</sub></span> on the diagonal</b> (the diagonal points on a straight line); <b>Even spacing</b> (points evenly spaced along each axis); <b>Unfold</b> (pulls apart branches that overlap); <b>Vivid edges</b> (brighter, thicker edges).</li>
+        <li><span class="grp">Ambient:</span> fades in the product of the trees around <span class="math">⟨Δ<sub>X</sub>⟩</span>. <b>Vertices</b> sets how visible its vertices are, and <b>Ambient reach</b> sets how far from <span class="math">⟨Δ<sub>X</sub>⟩</span> it extends.</li>
+        <li><span class="grp">Cutoff <span class="math">n</span>:</span> keeps only the edges of each tree whose endpoints are within distance <span class="math">n</span> in every other tree. It then draws the median algebra generated by the diagonal points of each component of the resulting product: the stages of Theorem 4.1. <span class="key" role="img" aria-label="play"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.8 8z"/></svg></span> steps through them. <b>Invariantly separating hyperplanes</b> highlights the hyperplanes that separate components of the previous stage without cutting through any of them.</li>
+        <li><span class="grp">View:</span> drag to rotate, Shift-drag to pan, scroll to zoom, double-click to reset. <b>Spin</b>, <b>Top view</b> and <b>Reset view</b> move the camera. The grip under the drawing resizes it, and the corner button goes full screen.</li>
+        <li><span class="grp">Colors:</span> pick a color scheme, or <b>Customize</b> single colors.</li>
+      </ul>
+    </section>
+  </footer>
+</div>
+
+<script>
+// ---- k trees on one vertex set X, their box product, and the median hull <Δ_X> of the diagonal ----
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hash32(...xs) {
+  let h = 0x9E3779B9 ^ xs.length;
+  for (const x of xs) {
+    h = Math.imul(h ^ (x | 0), 0x85EBCA6B); h ^= h >>> 13;
+    h = Math.imul(h, 0xC2B2AE35); h ^= h >>> 16;
+  }
+  return h >>> 0;
+}
+const rnd = (...xs) => mulberry32(hash32(...xs))();   // one uniform number fixed by its arguments
+
+const STRIP_W = 5, MEAN_GAP = 0.5, RADIUS = 2.2, RADIUS_WIDE = 3.6, PATH_NOISE = 1.6, MOVE_FROM = 0.75;
+
+// how far the other trees' copies of X have moved toward independent copies: 0 up to 75%, 1 at 100%
+const moveOf = diff => (diff <= MOVE_FROM ? 0 : Math.min(1, ((diff - MOVE_FROM) / (1 - MOVE_FROM)) ** 2));
+
+// X: points spread along a strip, generated one at a time so that growing n only appends points
+function makeX(n, seed) {
+  const P = []; let u = 0;
+  for (let j = 0; j < n; j++) {
+    if (j > 0) u += MEAN_GAP * (0.35 + 1.3 * rnd(seed, j, 1));
+    P.push([u, STRIP_W * rnd(seed, j, 2)]);
+  }
+  return P;
+}
+
+// neighbourhood graph on a copy of X: pairs within RADIUS_WIDE; 'near' marks pairs within RADIUS (plus, to keep
+// it connected, a link from each point to the nearest point on its left when nothing there is within RADIUS_WIDE)
+function neighbourGraph(P) {
+  const n = P.length, E = [], RW2 = RADIUS_WIDE * RADIUS_WIDE, R2 = RADIUS * RADIUS;
+  for (let i = 0; i < n; i++) {
+    const ui = P[i][0], vi = P[i][1];
+    for (let j = i + 1; j < n; j++) {
+      const du = ui - P[j][0], dv = vi - P[j][1], d2 = du * du + dv * dv;
+      if (d2 <= RW2) E.push({ a: i, b: j, near: d2 <= R2 });
+    }
+  }
+  const order = [...Array(n).keys()].sort((a, b) => P[a][0] - P[b][0]);
+  for (let h = 1; h < n; h++) {
+    const j = order[h], uj = P[j][0], vj = P[j][1];
+    let best = order[0], bd = Infinity;
+    for (let g = 0; g < h; g++) {
+      const i = order[g], du = P[i][0] - uj, dv = P[i][1] - vj, d2 = du * du + dv * dv;
+      if (d2 < bd) { bd = d2; best = i; }
+    }
+    if (bd > RW2) E.push({ a: Math.min(best, j), b: Math.max(best, j), near: true });
+  }
+  return E;
+}
+
+function kruskal(n, E, w) {
+  const par = [...Array(n).keys()], find = x => (par[x] === x ? x : (par[x] = find(par[x])));
+  const out = [];
+  for (const i of E.map((e, i) => i).sort((a, b) => w[a] - w[b])) {
+    const ra = find(E[i].a), rb = find(E[i].b);
+    if (ra !== rb) { par[ra] = rb; out.push([E[i].a, E[i].b]); }
+  }
+  return out;
+}
+
+// distribution function of (1 - s) a + s U for independent uniforms a, U on [0, 1] (a trapezoid)
+function keyCdf(x, s) {
+  const A = 1 - s, B = s, m = Math.min(A, B), M = Math.max(A, B);
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  if (m < 1e-12) return x;
+  if (x <= m) return x * x / (2 * A * B);
+  if (x <= M) return (x - m / 2) / M;
+  return 1 - (1 - x) * (1 - x) / (2 * A * B);
+}
+
+// each tree is built on its own copy of X. Tree 1 uses X itself (for paths: with jittered first coordinates).
+// Above MOVE_FROM the points of the other trees' copies move continuously toward independent uniform positions:
+// with s = moveOf(diff), a coordinate at relative position a in [0, 1] goes to G_s((1 - s) a + s U), where U is
+// an independent uniform and G_s is the distribution function of that key, so the points stay evenly spread.
+// At s = 1 the copy is an independent uniform sample of the strip, and the tree is independent of X.
+function copies(P, k, diff, seed, shape) {
+  const n = P.length, s = moveOf(diff), LP = Math.max(P[n - 1][0], 1e-9), L0 = MEAN_GAP * (n - 1), out = [];
+  for (let t = 0; t < k; t++) {
+    let C = shape === 'paths'
+      ? P.map((p, j) => [p[0] + diff * PATH_NOISE * (2 * rnd(seed, j, 10 + t) - 1), p[1]])
+      : P.map(p => [p[0], p[1]]);
+    if (t > 0 && s > 0) {
+      const J = shape === 'paths' ? diff * PATH_NOISE : 0, Ls = (1 - s) * LP + s * L0;
+      C = C.map((c, x) => {
+        const a = (c[0] + J) / (LP + 2 * J), b = c[1] / STRIP_W;
+        return [-J + (Ls + 2 * J) * keyCdf((1 - s) * a + s * rnd(seed, x, 92 + t), s),
+                STRIP_W * keyCdf((1 - s) * b + s * rnd(seed, x, 93 + t), s)];
+      });
+    }
+    out.push(C);
+  }
+  return out;
+}
+
+// k trees on X. 'trees': tree 1 is the minimum spanning tree of the near pairs for random weights (longer
+// pairs cost more than any near pair, so they are only used if needed). Trees 2..k redraw each weight with
+// probability diff, and a redrawn weight is uniform whatever the length of the pair, which opens up the
+// longer pairs: diff = 0 gives k equal trees; above MOVE_FROM the other trees also use moved copies of X,
+// and diff = 1 gives independent trees.
+// 'paths': each tree is the path through X in the order of the first coordinate of its copy of X.
+// Each tree keeps its copy: coord (first coordinate) places it along its axis, copy[x][1] is used to unfold.
+function makeTrees(P, k, diff, seed, shape) {
+  const n = P.length, C = copies(P, k, diff, seed, shape), trees = [];
+  if (shape === 'paths') {
+    for (let t = 0; t < k; t++) {
+      const key = C[t].map(c => c[0]);
+      const order = [...Array(n).keys()].sort((a, b) => key[a] - key[b]);
+      const edges = [];
+      for (let i = 1; i < n; i++) edges.push([order[i - 1], order[i]]);
+      trees.push({ edges, coord: key, copy: C[t] });
+    }
+    return trees;
+  }
+  for (let t = 0; t < k; t++) {
+    if (t === 0) {                                  // tree 1 does not depend on diff: keep it per point set and seed
+      const c = FIRST_TREE.get(P);
+      if (c && c.seed === seed) { trees.push(c.tree); continue; }
+    }
+    const E = neighbourGraph(C[t]);
+    const w = E.map(e => (t > 0 && rnd(seed, e.a, e.b, 60 + t) < diff) ? rnd(seed, e.a, e.b, 70 + t) : (e.near ? 0 : 1) + rnd(seed, e.a, e.b, 50));
+    const tree = { edges: kruskal(n, E, w), coord: C[t].map(c => c[0]), copy: C[t] };
+    if (t === 0) FIRST_TREE.set(P, { seed, tree });
+    trees.push(tree);
+  }
+  return trees;
+}
+const FIRST_TREE = new WeakMap();
+
+// the points of <Δ_X> by their code a + n b (+ n^2 c): an array over the whole product while that is small, a hash
+// map beyond (for three trees the product has |X|^3 tuples); -1 for a tuple that is not a point
+function tupleIndex(size) {
+  if (size <= 1 << 22) { const a = new Int32Array(size).fill(-1); return { get: c => a[c], set: (c, v) => { a[c] = v; } }; }
+  const m = new Map();
+  return { get: c => { const v = m.get(c); return v === undefined ? -1 : v; }, set: (c, v) => { m.set(c, v); } };
+}
+
+// <Δ_X> in T_1 x ... x T_k. A tuple p lies in <Δ_X> iff for all i != j, every T_i-halfspace containing p_i
+// meets every T_j-halfspace containing p_j; it suffices to test the halfspaces cut by edges at p_i and p_j.
+function medianHull(n, trees) {
+  const k = trees.length, W = Math.ceil(n / 32);
+  const full = new Uint32Array(W);
+  for (let x = 0; x < n; x++) full[x >> 5] |= 1 << (x & 31);
+  const T = trees.map(tr => {
+    const adj = Array.from({ length: n }, () => []);
+    for (const [a, b] of tr.edges) { adj[a].push(b); adj[b].push(a); }
+    const parent = new Int32Array(n).fill(-1), order = [0], seen = new Uint8Array(n); seen[0] = 1;
+    for (let h = 0; h < order.length; h++) for (const y of adj[order[h]]) if (!seen[y]) { seen[y] = 1; parent[y] = order[h]; order.push(y); }
+    const sub = Array.from({ length: n }, () => new Uint32Array(W));
+    for (let h = n - 1; h >= 0; h--) {
+      const x = order[h]; sub[x][x >> 5] |= 1 << (x & 31);
+      if (parent[x] >= 0) for (let w = 0; w < W; w++) sub[parent[x]][w] |= sub[x][w];
+    }
+    const inc = Array.from({ length: n }, () => []);          // halfspaces cut by the edges at each vertex
+    for (let x = 1; x < n; x++) {
+      const comp = new Uint32Array(W);
+      for (let w = 0; w < W; w++) comp[w] = full[w] & ~sub[x][w];
+      inc[x].push(sub[x]); inc[parent[x]].push(comp);
+    }
+    return { adj, parent, sub, inc, coord: tr.coord };
+  });
+  const meets = (A, B) => { for (let w = 0; w < W; w++) if (A[w] & B[w]) return true; return false; };
+  const ok = {};
+  for (let s = 0; s < k; s++) for (let t = s + 1; t < k; t++) {
+    const tab = new Uint8Array(n * n);
+    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
+      let good = 1;
+      for (const A of T[s].inc[a]) { for (const B of T[t].inc[b]) if (!meets(A, B)) { good = 0; break; } if (!good) break; }
+      tab[a * n + b] = good;
+    }
+    ok[s + ',' + t] = tab;
+  }
+  const V = [], index = tupleIndex(n ** k);
+  if (k === 2) {
+    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) if (ok['0,1'][a * n + b]) { index.set(a + n * b, V.length); V.push([a, b]); }
+  } else {
+    const t01 = ok['0,1'], t02 = ok['0,2'], t12 = ok['1,2'];
+    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
+      if (!t01[a * n + b]) continue;
+      for (let c = 0; c < n; c++) if (t02[a * n + c] && t12[b * n + c]) { index.set(a + n * b + n * n * c, V.length); V.push([a, b, c]); }
+    }
+  }
+  // walls of <Δ_X> = distinct splits of X cut by tree edges; key = side away from vertex 0
+  const groups = new Map(), splitOf = T.map(() => new Int32Array(n).fill(-1)), wallTrees = [], wallSide = [];
+  for (let t = 0; t < k; t++) for (let x = 1; x < n; x++) {
+    const key = Array.from(T[t].sub[x]).join(',');
+    if (!groups.has(key)) { groups.set(key, groups.size); wallTrees.push([]); wallSide.push(T[t].sub[x]); }
+    const g = groups.get(key); splitOf[t][x] = g; wallTrees[g].push([t, x]);
+  }
+  // edges: from p cross one wall; every tree cutting that wall moves its coordinate across its edge.
+  // Each edge is kept once: from its lower-numbered end, via the first tree that cuts its wall.
+  const stride = [1, n, n * n], edges = [], edgeWall = [], nbr = V.map(() => []), nbrM = V.map(() => []);
+  for (let vi = 0; vi < V.length; vi++) {
+    const p = V[vi];
+    let pc = 0;
+    for (let t = 0; t < k; t++) pc += p[t] * stride[t];
+    for (let t = 0; t < k; t++) for (const y of T[t].adj[p[t]]) {
+      const child = T[t].parent[y] === p[t] ? y : p[t], grp = wallTrees[splitOf[t][child]];
+      if (grp[0][0] !== t) continue;
+      let qc = pc, valid = true, mask = 0;
+      for (const [t2, c2] of grp) {
+        const par = T[t2].parent[c2];
+        if (p[t2] === c2) qc += (par - c2) * stride[t2]; else if (p[t2] === par) qc += (c2 - par) * stride[t2]; else { valid = false; break; }
+        mask |= 1 << t2;
+      }
+      if (!valid) continue;
+      const qi = index.get(qc);
+      if (qi <= vi) continue;
+      edges.push([vi, qi, mask]); edgeWall.push(splitOf[t][child]);
+      nbr[vi].push(qi); nbrM[vi].push(mask); nbr[qi].push(vi); nbrM[qi].push(mask);
+    }
+  }
+  // squares, each found once from its lowest-numbered vertex v, with v's neighbours a, b and opposite corner d
+  const faces = [], stamp = new Int32Array(V.length), dmask = new Int32Array(V.length), multi = m => (m & (m - 1)) !== 0;
+  let st = 0;
+  for (let v = 0; v < V.length; v++) {
+    const nb = nbr[v], nm = nbrM[v];
+    for (let i = 0; i < nb.length; i++) {
+      const a = nb[i];
+      if (a < v) continue;
+      st++;
+      const na = nbr[a], nam = nbrM[a];
+      for (let h = 0; h < na.length; h++) if (na[h] > v) { stamp[na[h]] = st; dmask[na[h]] = nam[h]; }
+      for (let j = i + 1; j < nb.length; j++) {
+        const b = nb[j];
+        if (b < v) continue;
+        const nbb = nbr[b], nbm = nbrM[b];
+        for (let h = 0; h < nbb.length; h++) {
+          const d = nbb[h];
+          if (d <= v || stamp[d] !== st) continue;
+          faces.push({ v: [v, a, d, b], tilted: multi(nm[i]) || multi(dmask[d]) || multi(nbm[h]) || multi(nm[j]) });
+        }
+      }
+    }
+  }
+  // the cube complex of a finite median graph is contractible, so V - E + F - C = 1 (and there are no 4-cubes for k <= 3)
+  const cubes = k === 3 ? faces.length - edges.length + V.length - 1 : 0;
+  const shared = wallTrees.filter(g => g.length > 1).length;
+  // walls: the side of each (a set of points of X, as a bitset), the block it belongs to (there is one, all of X) and
+  // the tree edges that cut it; edgeWall[e] is the wall that edge e crosses
+  const walls = {
+    side: wallSide, group: new Int32Array(wallSide.length), groupPoints: [Array.from({ length: n }, (_, x) => x)],
+    edges: wallTrees.map(g => g.map(([t, x]) => [t, x, T[t].parent[x]]))
+  };
+  return {
+    k, n, T, V, edges, faces, walls, edgeWall: Int32Array.from(edgeWall),
+    stats: {
+      points: V.length, edges: edges.length, nongrid: edges.filter(e => e[2] & (e[2] - 1)).length,
+      squares: faces.length, tilted: faces.filter(f => f.tilted).length, cubes, walls: wallTrees.length, shared
+    }
+  };
+}
+
+// ---- cutoffs: the n-th cutoff forest of T_i keeps the edges whose ends are within n in every other tree ----
+function treeDistances(n, edges) {
+  const adj = Array.from({ length: n }, () => []);
+  for (const [a, b] of edges) { adj[a].push(b); adj[b].push(a); }
+  const D = new Int32Array(n * n).fill(-1), queue = new Int32Array(n);
+  for (let s = 0; s < n; s++) {
+    let h = 0, tl = 0; queue[tl++] = s; D[s * n + s] = 0;
+    while (h < tl) { const x = queue[h++]; for (const y of adj[x]) if (D[s * n + y] < 0) { D[s * n + y] = D[s * n + x] + 1; queue[tl++] = y; } }
+  }
+  return D;
+}
+// the level of an edge {x, y} of T_i is the largest distance from x to y in the other trees (at least 1), so the n-th
+// cutoff forest T_i^{<=n} keeps the edges of level <= n; from the largest level on, every forest is the whole tree
+function edgeLevels(n, trees) {
+  const k = trees.length, D = trees.map(tr => treeDistances(n, tr.edges));
+  return trees.map((tr, i) => tr.edges.map(([a, b]) => {
+    let m = 1;
+    for (let j = 0; j < k; j++) if (j !== i) m = Math.max(m, D[j][a * n + b]);
+    return m;
+  }));
+}
+
+// <Δ_X> taken in each component B of the box product of the cutoff forests that meets the diagonal. B is a product
+// C_1 x ... x C_k of components of the forests and meets Δ_X in the diagonal of Y = C_1 ∩ ... ∩ C_k. Each C_i is a
+// subtree of T_i, hence convex, so <B ∩ Δ_X> is the subalgebra generated by diag Y in the whole product. A tuple p lies
+// in it iff every two halfspaces containing p meet diag Y; both may now come from the same tree, which forces p_i into
+// the median hull of Y in T_i. Its walls are the splits of Y cut by tree edges. The edges of one tree that cut the
+// same split form a path, and crossing that wall moves the coordinate from one end of the path to the other.
+function cutoffHull(n, trees, levels, cut) {
+  const k = trees.length, W = Math.ceil(n / 32), full = new Uint32Array(W);
+  for (let x = 0; x < n; x++) full[x >> 5] |= 1 << (x & 31);
+  const T = trees.map(tr => {
+    const adj = Array.from({ length: n }, () => []);
+    for (const [a, b] of tr.edges) { adj[a].push(b); adj[b].push(a); }
+    const parent = new Int32Array(n).fill(-1), order = [0], seen = new Uint8Array(n); seen[0] = 1;
+    for (let h = 0; h < order.length; h++) for (const y of adj[order[h]]) if (!seen[y]) { seen[y] = 1; parent[y] = order[h]; order.push(y); }
+    const sub = Array.from({ length: n }, () => new Uint32Array(W));
+    for (let h = n - 1; h >= 0; h--) {
+      const x = order[h]; sub[x][x >> 5] |= 1 << (x & 31);
+      if (parent[x] >= 0) for (let w = 0; w < W; w++) sub[parent[x]][w] |= sub[x][w];
+    }
+    const inc = Array.from({ length: n }, () => []);          // halfspaces cut by the edges at each vertex
+    for (let x = 1; x < n; x++) {
+      const comp = new Uint32Array(W);
+      for (let w = 0; w < W; w++) comp[w] = full[w] & ~sub[x][w];
+      inc[x].push(sub[x]); inc[parent[x]].push(comp);
+    }
+    return { adj, parent, sub, inc };
+  });
+  // the cutoff forests, their components, and the diagonal grouped by component of the product
+  const forest = trees.map((tr, i) => tr.edges.filter((e, j) => levels[i][j] <= cut));
+  const label = forest.map(F => {
+    const par = [...Array(n).keys()], find = x => (par[x] === x ? x : (par[x] = find(par[x])));
+    for (const [a, b] of F) par[find(a)] = find(b);
+    return Array.from({ length: n }, (_, x) => find(x));
+  });
+  const groups = new Map();
+  for (let x = 0; x < n; x++) {
+    const key = label.map(l => l[x]).join(',');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(x);
+  }
+  const members = label.map(l => {                           // the vertices of each component of each forest
+    const m = new Map();
+    l.forEach((r, x) => { if (!m.has(r)) m.set(r, []); m.get(r).push(x); });
+    return m;
+  });
+  const V = [], index = tupleIndex(n ** k), stride = [1, n, n * n], edges = [];
+  const t02 = k === 3 ? new Uint8Array(n * n) : null, t12 = k === 3 ? new Uint8Array(n * n) : null;
+  const wallSide = [], wallGroup = [], wallEdges = [], groupPoints = [], edgeWall = [], groupStart = [];   // as in medianHull
+  let walls = 0, shared = 0;
+  for (const ys of groups.values()) {
+    const gi = groupPoints.length, wBase = wallSide.length;
+    groupPoints.push(ys);
+    const Y = new Uint32Array(W);
+    for (const y of ys) Y[y >> 5] |= 1 << (y & 31);
+    const meet = (A, B) => { for (let w = 0; w < W; w++) if (A[w] & B[w] & Y[w]) return true; return false; };
+    const pairOk = (s, a, t, b) => { for (const A of T[s].inc[a]) for (const B of T[t].inc[b]) if (!meet(A, B)) return false; return true; };
+    // candidates for each coordinate: the median hull of Y in that tree (every two halfspaces at the vertex meet Y),
+    // which lies in the component C_t of the forest that contains Y
+    const Cs = T.map((tr, t) => members[t].get(label[t][ys[0]]));
+    const cand = T.map((tr, t) => {
+      const c = [];
+      for (const a of Cs[t]) {
+        const I = tr.inc[a];
+        let good = true;
+        for (let i = 0; good && i < I.length; i++) for (let j = i; j < I.length; j++) if (!meet(I[i], I[j])) { good = false; break; }
+        if (good) c.push(a);
+      }
+      return c;
+    });
+    const base = V.length;
+    if (k === 2) {
+      for (const a of cand[0]) for (const b of cand[1]) if (pairOk(0, a, 1, b)) { index.set(a + n * b, V.length); V.push([a, b]); }
+    } else {
+      for (const c of cand[2]) {                              // t02, t12: every entry read below is written here first
+        for (const a of cand[0]) t02[a * n + c] = pairOk(0, a, 2, c) ? 1 : 0;
+        for (const b of cand[1]) t12[b * n + c] = pairOk(1, b, 2, c) ? 1 : 0;
+      }
+      for (const a of cand[0]) for (const b of cand[1]) {
+        if (!pairOk(0, a, 1, b)) continue;
+        for (const c of cand[2]) if (t02[a * n + c] && t12[b * n + c]) { index.set(a + n * b + n * n * c, V.length); V.push([a, b, c]); }
+      }
+    }
+    groupStart.push(base);
+    // walls: the nontrivial splits of Y cut by tree edges, keyed by the side without the first point of Y
+    const y0 = ys[0], wallIndex = new Map(), wallOf = T.map(() => new Int32Array(n).fill(-1)), wl = [];
+    for (let t = 0; t < k; t++) for (const x of Cs[t]) {
+      const px = T[t].parent[x];
+      if (px < 0 || label[t][px] !== label[t][x]) continue;   // edges leaving C_t leave all of Y on one side
+      const side = new Uint32Array(W);
+      let empty = true, all = true;
+      for (let w = 0; w < W; w++) { side[w] = T[t].sub[x][w] & Y[w]; if (side[w]) empty = false; if (side[w] !== Y[w]) all = false; }
+      if (empty || all) continue;
+      if (side[y0 >> 5] & (1 << (y0 & 31))) for (let w = 0; w < W; w++) side[w] = Y[w] & ~side[w];
+      const key = side.join(',');
+      let g = wallIndex.get(key);
+      if (g === undefined) {
+        g = wl.length; wallIndex.set(key, g); wl.push({ first: t, byTree: new Map() });
+        wallSide.push(side); wallGroup.push(gi); wallEdges.push([]);
+      }
+      wallOf[t][x] = g; wallEdges[wBase + g].push([t, x, T[t].parent[x]]);
+      if (!wl[g].byTree.has(t)) wl[g].byTree.set(t, []);
+      wl[g].byTree.get(t).push([x, T[t].parent[x]]);
+    }
+    for (const g of wl) for (const [t, es] of g.byTree) {
+      const cnt = new Map();
+      for (const [a, b] of es) { cnt.set(a, (cnt.get(a) || 0) + 1); cnt.set(b, (cnt.get(b) || 0) + 1); }
+      const ends = [...cnt].filter(([, c]) => c === 1).map(([v]) => v);
+      g.byTree.set(t, { ends, len: es.length });
+    }
+    walls += wl.length; shared += wl.filter(g => g.byTree.size > 1).length;
+    // edges: cross one wall; each tree cutting it moves its coordinate to the other end of its path
+    for (let vi = base; vi < V.length; vi++) {
+      const p = V[vi];
+      let pc = 0;
+      for (let t = 0; t < k; t++) pc += p[t] * stride[t];
+      for (let t = 0; t < k; t++) for (const y of T[t].adj[p[t]]) {
+        const child = T[t].parent[y] === p[t] ? y : p[t], g = wallOf[t][child];
+        if (g < 0 || wl[g].first !== t) continue;
+        let qc = pc, valid = true, mask = 0, long = false;
+        for (const [t2, info] of wl[g].byTree) {
+          const [e1, e2] = info.ends, cur = p[t2], to = cur === e1 ? e2 : cur === e2 ? e1 : -1;
+          if (to < 0) { valid = false; break; }
+          qc += (to - cur) * stride[t2]; mask |= 1 << t2; if (info.len > 1) long = true;
+        }
+        if (!valid) continue;
+        const qi = index.get(qc);
+        if (qi <= vi) continue;
+        edges.push([vi, qi, mask, long]); edgeWall.push(wBase + g);
+      }
+    }
+  }
+  // squares, each found once from its lowest-numbered vertex (as in medianHull)
+  const nbr = V.map(() => []), nbrM = V.map(() => []);
+  for (const [a, b, m] of edges) { nbr[a].push(b); nbrM[a].push(m); nbr[b].push(a); nbrM[b].push(m); }
+  const faces = [], stamp = new Int32Array(V.length), dmask = new Int32Array(V.length), multi = m => (m & (m - 1)) !== 0;
+  let st = 0;
+  for (let v = 0; v < V.length; v++) {
+    const nb = nbr[v], nm = nbrM[v];
+    for (let i = 0; i < nb.length; i++) {
+      const a = nb[i];
+      if (a < v) continue;
+      st++;
+      const na = nbr[a], nam = nbrM[a];
+      for (let h = 0; h < na.length; h++) if (na[h] > v) { stamp[na[h]] = st; dmask[na[h]] = nam[h]; }
+      for (let j = i + 1; j < nb.length; j++) {
+        const b = nb[j];
+        if (b < v) continue;
+        const nbb = nbr[b], nbm = nbrM[b];
+        for (let h = 0; h < nbb.length; h++) {
+          const d = nbb[h];
+          if (d <= v || stamp[d] !== st) continue;
+          faces.push({ v: [v, a, d, b], tilted: multi(nm[i]) || multi(dmask[d]) || multi(nbm[h]) || multi(nm[j]) });
+        }
+      }
+    }
+  }
+  // each component's cube complex is contractible, so summing V - E + F - C = 1 over the components gives the cubes
+  const comps = groups.size, cubes = k === 3 ? faces.length - edges.length + V.length - comps : 0;
+  const forestAdj = forest.map(F => { const adj = Array.from({ length: n }, () => []); for (const [a, b] of F) { adj[a].push(b); adj[b].push(a); } return adj; });
+  // the blocks (components of the cutoff product) that meet the diagonal, numbered along it: a point p lies in block
+  // blocks.index.get(key) with key the tuple of its coordinates' forest components, or in none of them
+  const blocks = { label, index: new Map([...groups.keys()].map((key, i) => [key, i])) };
+  const wallInfo = { side: wallSide, group: Int32Array.from(wallGroup), groupPoints, edges: wallEdges };
+  groupStart.push(V.length);                                // the points of block g are groupStart[g] .. groupStart[g + 1] - 1
+  return {
+    k, n, V, edges, faces, T: forestAdj.map(adj => ({ adj })), blocks, walls: wallInfo, edgeWall: Int32Array.from(edgeWall), groupStart,
+    stats: {
+      points: V.length, edges: edges.length, nongrid: edges.filter(e => multi(e[2]) || e[3]).length,
+      multi: edges.filter(e => multi(e[2])).length, long: edges.filter(e => !multi(e[2]) && e[3]).length,
+      squares: faces.length, tilted: faces.filter(f => f.tilted).length, cubes, walls, shared, comps,
+      kept: forest.map(F => F.length)
+    }
+  };
+}
+
+// ---- the hyperplanes of a cutoff that separate the components of the cutoff below ----
+// comp[x] numbers the block of the cutoff product (at this cutoff) that contains (x, ..., x); at cutoff 0 every forest
+// is empty, so every point is on its own
+function diagonalComponents(n, trees, levels, cut) {
+  const label = trees.map((tr, i) => {
+    const par = [...Array(n).keys()], find = x => (par[x] === x ? x : (par[x] = find(par[x])));
+    tr.edges.forEach(([a, b], j) => { if (levels[i][j] <= cut) par[find(a)] = find(b); });
+    return Array.from({ length: n }, (_, x) => find(x));
+  });
+  const ids = new Map(), comp = new Int32Array(n);
+  for (let x = 0; x < n; x++) {
+    const key = label.map(l => l[x]).join(',');
+    if (!ids.has(key)) ids.set(key, ids.size);
+    comp[x] = ids.get(key);
+  }
+  return comp;
+}
+// For the hull H of some cutoff and the components comp of a lower cutoff: a component <diag Z> of the lower cutoff
+// lies in one block of H, and on the side of a wall of that block exactly when Z does (halfspaces are subalgebras),
+// so the wall separates two components when some Z lies inside its side and another inside the rest. Returns, for
+// each wall, 0 if it separates no two components, 1 if it does and cuts no component, 2 if it also cuts one.
+function separatingWalls(H, comp) {
+  const { side, group, groupPoints } = H.walls, out = new Uint8Array(side.length);
+  for (let w = 0; w < side.length; w++) {
+    const S = side[w], flag = new Map();                  // component -> 1: points on the side, 2: off it, 3: both
+    for (const y of groupPoints[group[w]]) {
+      const c = comp[y], b = (S[y >> 5] >>> (y & 31)) & 1 ? 1 : 2;
+      flag.set(c, (flag.get(c) || 0) | b);
+    }
+    let on = false, off = false, cuts = false;
+    for (const f of flag.values()) { if (f === 1) on = true; else if (f === 2) off = true; else cuts = true; }
+    out[w] = on && off ? (cuts ? 2 : 1) : 0;
+  }
+  return out;
+}
+
+// ---- stepping through the changes of the trees as Difference moves ----
+function treeKey(trees) {
+  return trees.map(t => t.edges.map(([a, b]) => (a < b ? a * 4096 + b : b * 4096 + a)).sort((x, y) => x - y).join(',')).join('|');
+}
+// the change of the trees nearest to diff in direction dir (+1 or -1), as a pair lo < hi at most 1e-12 apart with
+// different trees at lo and hi: walk in growing steps until the trees differ, then bisect. null if there is none.
+function changeNear(P, k, diff, seed, shape, dir) {
+  const key0 = treeKey(makeTrees(P, k, diff, seed, shape)), same = d => treeKey(makeTrees(P, k, d, seed, shape)) === key0;
+  let a = diff, h = 1e-4;
+  for (;;) {
+    const b = Math.min(1, Math.max(0, a + dir * h));
+    if (b === a) return null;
+    if (!same(b)) {
+      let x = a, y = b;                   // x: the trees at diff, y: other trees
+      while (Math.abs(y - x) > 1e-12) { const mid = (x + y) / 2; if (same(mid)) x = mid; else y = mid; }
+      return dir > 0 ? { lo: x, hi: y } : { lo: y, hi: x };
+    }
+    a = b; h = Math.min(4e-3, h * 1.25);
+  }
+}
+// Difference at the start of the next state of the trees (dir = +1) or of the previous one (dir = -1), where a
+// state starts just past the change that creates it (or at 0 for the first); null if there is no such state
+function stepChange(P, k, diff, seed, shape, dir) {
+  const c = changeNear(P, k, diff, seed, shape, dir);
+  if (!c) return null;
+  if (dir > 0) return c.hi;
+  const c2 = changeNear(P, k, c.lo, seed, shape, -1);
+  return c2 ? c2.hi : 0;
+}
+
+// ---- colour schemes for the viewer ----
+// Each id is the name in lower case with hyphens, without the part in brackets, so that a link can ask for a scheme
+// by name after # (see app.js).
+// Roles: panel (the drawing's background), bg (around it), ink (text), edge (edges along one tree, with Colour by tree
+// off) and vtx (other points of <Δ_X>), t1-t3 (the trees), ng (edges along several trees; tilted squares share its
+// hue), gen (the points of Δ_X), cell and tilt (squares and tilted squares, drawn with alpha cellA and tiltA), hyp and
+// halo (separating hyperplanes: their middle segments, and the band under their edges, drawn with alpha haloA), lat
+// (the ambient product), diag (the dashed diagonal), focus (hover rings and keyboard focus). muted, rule, vtx and the
+// neon colours of Vivid edges are derived when left out. Apart from the two standard schemes, the colours t1, t2, t3,
+// ng and gen are tuned so that any two of them differ by at least 15 (OKLab x 100) in normal vision and, apart from
+// the greyscale ones, at least 6 under simulated protanopia and deuteranopia (8 in the colour-blind safe one), with
+// lines contrasting at least 3:1 with the panel. The band under the edges of a separating hyperplane is a strong colour
+// that differs from the scheme's lines (a highlighter on light panels, a saturated colour at high alpha on dark ones).
+const SCHEMES = [
+  { id: 'standard', name: 'Standard (follows light/dark)', group: 'Standard' },
+  { id: 'standard-light', name: 'Standard light', group: 'Standard', dark: false,
+    c: { bg: '#f3f5f9', panel: '#ffffff', ink: '#16233b', muted: '#5a6477', rule: '#d6dce7', focus: '#2f6fd6', vtx: '#1e3255',
+         edge: '#1e3255', t1: '#2563eb', t2: '#0f9d6e', t3: '#7c3aed', ng: '#db2777', gen: '#e4572e', cell: '#bcd3f1', cellA: 0.5,
+         tilt: '#f4bfd6', tiltA: 0.6, diag: '#98a1b3', lat: '#8792a6', hyp: '#a16207', halo: '#facc15', haloA: 0.7,
+         neon: { t1: '#0050ff', t2: '#00b865', t3: '#8a1cff', ng: '#ff0a78', edge: '#1f35ff' } } },
+  { id: 'standard-dark', name: 'Standard dark', group: 'Standard', dark: true,
+    c: { bg: '#0c111c', panel: '#111a2a', ink: '#e3e9f4', muted: '#97a3b8', rule: '#263149', focus: '#7aa7f5', vtx: '#cad6ec',
+         edge: '#cad6ec', t1: '#6ea8ff', t2: '#3fd39b', t3: '#b39afc', ng: '#f472b6', gen: '#ff8a4c', cell: '#4f78b8', cellA: 0.34,
+         tilt: '#b04a80', tiltA: 0.42, diag: '#5d6982', lat: '#74839f', hyp: '#fde047', halo: '#facc15', haloA: 0.7,
+         neon: { t1: '#3d9bff', t2: '#1dffa0', t3: '#c886ff', ng: '#ff4fb4', edge: '#e4f2ff' } } },
+
+  // ---- light ----
+  // the colours of the figures for the paper: ink edges (the same for edges along several trees), blue squares, red
+  // points and hyperplanes on a peach band, and blue, green and amber for the trees
+  { id: 'paper-figures', name: 'Paper figures', group: 'Light', dark: false,
+    c: { bg: '#f2f4f8', panel: '#ffffff', ink: '#1f2a3c', edge: '#1f2a3c', t1: '#2a6fb5', t2: '#1e8a5e', t3: '#c98a1c', ng: '#1f2a3c',
+         gen: '#cf4b37', cell: '#a9c1e0', cellA: 0.45, tilt: '#a9c1e0', tiltA: 0.45, hyp: '#cf4b37', halo: '#f39a82', haloA: 0.85,
+         focus: '#2a6fb5', diag: '#9aa3b2', lat: '#9aa3b2' } },
+  { id: 'projector', name: 'Projector (high contrast)', group: 'Light', dark: false,
+    c: { bg: '#e9ecf1', panel: '#ffffff', ink: '#0a0e18', muted: '#3f4859', rule: '#c3cad6', edge: '#0a0e18', t1: '#0245d1', t2: '#007a3d',
+         t3: '#d97807', ng: '#c30283', gen: '#e80119', cell: '#8fb5ff', cellA: 0.5, tilt: '#ff9fd2', tiltA: 0.5, hyp: '#5c3a00',
+         halo: '#ffd60a', haloA: 0.9, focus: '#0245d1', diag: '#6b7486', lat: '#6b7486' } },
+  { id: 'colour-blind-safe', name: 'Color-blind safe (Okabe–Ito)', group: 'Light', dark: false,
+    c: { bg: '#f3f4f6', panel: '#ffffff', ink: '#1b1f24', edge: '#1b1f24', t1: '#0072b2', t2: '#d55e00', t3: '#009e73', ng: '#cc79a7',
+         gen: '#e69f00', cell: '#56b4e9', cellA: 0.3, tilt: '#cc79a7', tiltA: 0.28, hyp: '#1b1f24', halo: '#f0e442', haloA: 1.0,
+         focus: '#0072b2', diag: '#8b929c', lat: '#8b929c' } },
+  { id: 'whiteboard-markers', name: 'Whiteboard markers', group: 'Light', dark: false,
+    c: { bg: '#eceeea', panel: '#fdfdfb', ink: '#1d1f22', edge: '#1d1f22', t1: '#0251c3', t2: '#d3302c', t3: '#028541', ng: '#823b9c',
+         gen: '#f07804', cell: '#a8c4f0', cellA: 0.45, tilt: '#e6a4d8', tiltA: 0.5, hyp: '#1d1f22', halo: '#ffe838', haloA: 0.9,
+         focus: '#0251c3', diag: '#9a9fa6', lat: '#9a9fa6' } },
+  { id: 'metropolis', name: 'Metropolis (beamer)', group: 'Light', dark: false,
+    c: { bg: '#eceeee', panel: '#fafafa', ink: '#23373b', edge: '#23373b', t1: '#22667e', t2: '#08a263', t3: '#8a4fb0', ng: '#c72f57',
+         gen: '#eb811c', cell: '#a7c8d3', cellA: 0.5, tilt: '#f0b3c3', tiltA: 0.5, hyp: '#7a4d00', halo: '#ffc94d', haloA: 0.85,
+         focus: '#22667e', diag: '#90a0a4', lat: '#90a0a4' } },
+  { id: 'solarized-light', name: 'Solarized light', group: 'Light', dark: false,
+    c: { bg: '#eee8d5', panel: '#fdf6e3', ink: '#3f545b', muted: '#657b83', rule: '#e0d9c3', edge: '#586e75', t1: '#337ddd', t2: '#2fa096',
+         t3: '#cd4509', ng: '#c2368f', gen: '#b38b08', cell: '#268bd2', cellA: 0.17, tilt: '#d33682', tiltA: 0.17, hyp: '#5b6a00',
+         halo: '#859900', haloA: 0.55, focus: '#268bd2', diag: '#93a1a1', lat: '#93a1a1' } },
+  { id: 'sepia', name: 'Sepia', group: 'Light', dark: false,
+    c: { bg: '#ede3d1', panel: '#faf5ea', ink: '#3a2e23', edge: '#3a2e23', t1: '#0b6198', t2: '#4b7945', t3: '#863d7c', ng: '#b83f0c',
+         gen: '#d88618', cell: '#b0c4d6', cellA: 0.55, tilt: '#efb49b', tiltA: 0.55, hyp: '#5c4300', halo: '#ecc155', haloA: 0.9,
+         focus: '#0b6198', diag: '#a3957d', lat: '#a3957d' } },
+  { id: 'seaside', name: 'Seaside', group: 'Light', dark: false,
+    c: { bg: '#e8f1f4', panel: '#fbfdfe', ink: '#0f2f3c', edge: '#0f2f3c', t1: '#1c5fa8', t2: '#118f84', t3: '#b6880d', ng: '#c9355a',
+         gen: '#fe6c59', cell: '#b3d4e8', cellA: 0.55, tilt: '#f5bcc8', tiltA: 0.55, hyp: '#5a4300', halo: '#ffd84d', haloA: 0.85,
+         focus: '#1c5fa8', diag: '#93a6ae', lat: '#93a6ae' } },
+  { id: 'forest', name: 'Forest', group: 'Light', dark: false,
+    c: { bg: '#eaefe6', panel: '#fbfcf8', ink: '#1d2a1e', edge: '#1d2a1e', t1: '#2e6a3a', t2: '#0565a5', t3: '#ac7d0e', ng: '#8e3b89',
+         gen: '#f86e5a', cell: '#bdd3b9', cellA: 0.55, tilt: '#e2bfe0', tiltA: 0.5, hyp: '#4a3b00', halo: '#f0d940', haloA: 0.85,
+         focus: '#2e6a3a', diag: '#99a596', lat: '#99a596' } },
+  { id: 'berry', name: 'Berry', group: 'Light', dark: false,
+    c: { bg: '#f5edf2', panel: '#fffafd', ink: '#2b1830', edge: '#2b1830', t1: '#7b2fa2', t2: '#d31247', t3: '#0f8a6a', ng: '#ce7b01',
+         gen: '#194c80', cell: '#dcc6ea', cellA: 0.55, tilt: '#f6d29e', tiltA: 0.5, hyp: '#2b1830', halo: '#c8f04a', haloA: 0.8,
+         focus: '#7b2fa2', diag: '#a898a6', lat: '#a898a6' } },
+  { id: 'pastel', name: 'Pastel', group: 'Light', dark: false,
+    c: { bg: '#f4f4fa', panel: '#ffffff', ink: '#383c58', edge: '#474c6b', t1: '#4e97da', t2: '#439a6c', t3: '#d68a2e', ng: '#dc649a',
+         gen: '#7b5ac6', cell: '#d4e3f7', cellA: 0.8, tilt: '#f9d4e2', tiltA: 0.8, hyp: '#8a6400', halo: '#ffd95c', haloA: 0.85,
+         focus: '#4e97da', diag: '#a7abc0', lat: '#a7abc0' } },
+  { id: 'greyscale', name: 'Grayscale (for print)', group: 'Light', dark: false,
+    c: { bg: '#efefef', panel: '#ffffff', ink: '#111111', edge: '#5c5c5c', vtx: '#2b2b2b', t1: '#3d3d3d', t2: '#6e6e6e', t3: '#9a9a9a',
+         ng: '#000000', gen: '#000000', cell: '#000000', cellA: 0.07, tilt: '#000000', tiltA: 0.16, hyp: '#000000', halo: '#000000',
+         haloA: 0.24, focus: '#000000', diag: '#a0a0a0', lat: '#9a9a9a' } },
+
+  // ---- dark ----
+  { id: 'midnight', name: 'Midnight', group: 'Dark', dark: true,
+    c: { bg: '#060a14', panel: '#0b1120', ink: '#e6ecf7', edge: '#cbd6ea', t1: '#6aaeff', t2: '#52deb1', t3: '#fe9f5b', ng: '#f972dd',
+         gen: '#ffe067', cell: '#3c62a8', cellA: 0.36, tilt: '#a8458f', tiltA: 0.4, hyp: '#ffffff', halo: '#ff4040', haloA: 0.8,
+         focus: '#6aaeff', diag: '#4f5b75', lat: '#68779a' } },
+  { id: 'chalkboard', name: 'Chalkboard', group: 'Dark', dark: true,
+    c: { bg: '#16211b', panel: '#1c2a23', ink: '#efede3', edge: '#e9e5d6', t1: '#8ecff0', t2: '#fbe47d', t3: '#f299b4', ng: '#85ce73',
+         gen: '#fea123', cell: '#e9e5d6', cellA: 0.11, tilt: '#85ce73', tiltA: 0.3, hyp: '#ffffff', halo: '#8c5cff', haloA: 0.9,
+         focus: '#8ecff0', diag: '#869d92', lat: '#869d92' } },
+  { id: 'blueprint', name: 'Blueprint', group: 'Dark', dark: true,
+    c: { bg: '#123766', panel: '#19467f', ink: '#eef5ff', edge: '#eef5ff', t1: '#a7daff', t2: '#fc9f1f', t3: '#70f9af', ng: '#fea1c1',
+         gen: '#fee25d', cell: '#ffffff', cellA: 0.12, tilt: '#fea1c1', tiltA: 0.32, hyp: '#ffffff', halo: '#ff4040', haloA: 0.9,
+         focus: '#fee25d', diag: '#9cbbe2', lat: '#9cbbe2' } },
+  { id: 'metropolis-dark', name: 'Metropolis dark (beamer)', group: 'Dark', dark: true,
+    c: { bg: '#1a2a2d', panel: '#23373b', ink: '#fafafa', edge: '#e8eef0', t1: '#7ec4e8', t2: '#76e28b', t3: '#be8dff', ng: '#fe91a8',
+         gen: '#e48200', cell: '#7ec4e8', cellA: 0.2, tilt: '#fe91a8', tiltA: 0.24, hyp: '#ffffff', halo: '#ffd23f', haloA: 0.75,
+         focus: '#eb811b', diag: '#6b8286', lat: '#7f9599' } },
+  { id: 'solarized-dark', name: 'Solarized dark', group: 'Dark', dark: true,
+    c: { bg: '#00212b', panel: '#002b36', ink: '#b4c1c1', muted: '#839496', rule: '#0e3d4a', edge: '#93a1a1', t1: '#2788d6', t2: '#1eac91',
+         t3: '#be5306', ng: '#d53185', gen: '#d59200', cell: '#268bd2', cellA: 0.22, tilt: '#d33682', tiltA: 0.24, hyp: '#fdf6e3',
+         halo: '#c04dff', haloA: 0.85, focus: '#268bd2', diag: '#586e75', lat: '#5f777e' } },
+  { id: 'polar-night', name: 'Polar night', group: 'Dark', dark: true,
+    c: { bg: '#272c36', panel: '#2e3440', ink: '#eceff4', rule: '#3b4252', edge: '#d8dee9', t1: '#76cbf4', t2: '#97b673', t3: '#ae8db7',
+         ng: '#e37c39', gen: '#fec65f', cell: '#81a1c1', cellA: 0.3, tilt: '#d08770', tiltA: 0.3, hyp: '#eceff4', halo: '#ff3df2',
+         haloA: 0.85, focus: '#88c0d0', diag: '#616e88', lat: '#76839c' } },
+  { id: 'ember', name: 'Ember', group: 'Dark', dark: true,
+    c: { bg: '#110c0a', panel: '#1a1310', ink: '#f4e7dc', edge: '#cdb6a3', t1: '#ffad4b', t2: '#fe5f57', t3: '#c79bff', ng: '#32dbc9',
+         gen: '#fff1dc', cell: '#ff8a3d', cellA: 0.14, tilt: '#32dbc9', tiltA: 0.18, hyp: '#ffffff', halo: '#4d7cff', haloA: 0.85,
+         focus: '#ffad4b', diag: '#6e5a4e', lat: '#866f61' } },
+  { id: 'aurora', name: 'Aurora', group: 'Dark', dark: true,
+    c: { bg: '#061215', panel: '#0b1b1f', ink: '#ddf2ee', edge: '#a3c9c2', t1: '#4ee6cc', t2: '#a38cfd', t3: '#fbbf25', ng: '#f571b5',
+         gen: '#ffffff', cell: '#2dd4bf', cellA: 0.18, tilt: '#f472b6', tiltA: 0.2, hyp: '#ffffff', halo: '#b6ff3d', haloA: 0.75,
+         focus: '#4ee6cc', diag: '#46636a', lat: '#5c7c83' } },
+  { id: 'neon', name: 'Neon', group: 'Dark', dark: true,
+    c: { bg: '#000000', panel: '#05050a', ink: '#f4f4ff', edge: '#e6e6ff', t1: '#0ae5ff', t2: '#7ffd07', t3: '#b388ff', ng: '#fe2f6f',
+         gen: '#ffb007', cell: '#0ae5ff', cellA: 0.13, tilt: '#fe2f6f', tiltA: 0.18, hyp: '#ffffff', halo: '#ff3df2', haloA: 0.85,
+         focus: '#0ae5ff', diag: '#4a4a66', lat: '#5e5e80' } },
+  { id: 'plum', name: 'Plum', group: 'Dark', dark: true,
+    c: { bg: '#140c1a', panel: '#1d1326', ink: '#f0e7f7', edge: '#dccfea', t1: '#c48bff', t2: '#61d5f0', t3: '#84e987', ng: '#febf34',
+         gen: '#ff6f86', cell: '#b57cf0', cellA: 0.2, tilt: '#febf34', tiltA: 0.18, hyp: '#ffffff', halo: '#4d7cff', haloA: 0.85,
+         focus: '#c48bff', diag: '#5d4c6e', lat: '#76628a' } },
+  { id: 'greyscale-dark', name: 'Grayscale dark', group: 'Dark', dark: true,
+    c: { bg: '#0c0c0c', panel: '#141414', ink: '#ececec', edge: '#a3a3a3', vtx: '#d6d6d6', t1: '#c9c9c9', t2: '#949494', t3: '#6b6b6b',
+         ng: '#ffffff', gen: '#ffffff', cell: '#ffffff', cellA: 0.07, tilt: '#ffffff', tiltA: 0.15, hyp: '#ffffff', halo: '#ffffff',
+         haloA: 0.5, focus: '#ffffff', diag: '#5a5a5a', lat: '#707070' } }
+];
+
+// ---- viewer: product-coordinate drawing of <Δ_X>, turntable camera, painter's algorithm on a 2D canvas ----
+(() => {
+  const $ = id => document.getElementById(id);
+  const NMAX = { 2: 300, 3: 300 };
+  const HOME = { 2: { azim: -90, elev: 89.5, zoom: 1, target: null }, 3: { azim: -72, elev: 30, zoom: 1, target: null } };   // two trees: from the top
+  const SPECIAL = { 2: { label: 'Top view', azim: -90, elev: 89.5 }, 3: { label: 'Along the diagonal', azim: 45, elev: 35.26 } };
+  const S2 = Math.SQRT1_2;
+  const AXES = { 2: [[1, 0, 0], [0, 1, 0]], 3: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] };
+  // unfolding directions: orthogonal to each tree's own axis and summing to zero, so the diagonal stays put
+  const LIFT = { 2: [[0, 0, 1], [0, 0, -1]], 3: [[0, S2, -S2], [-S2, 0, S2], [S2, -S2, 0]] };
+  const SUBS = ['₁', '₂', '₃'];
+
+  const state = {
+    k: 2, shape: 'paths', n: { 2: 51, 3: 20 }, diff: 0.9072, seed: 43290, unfold: 0,
+    mode: 'hull', gen: true, squares: true, byTree: true, pin: false, even: true, vivid: 0.5, spin: false, amb: 1, pts: 0.5, reach: { 2: null, 3: null }, sep: true, cut: Infinity, ...HOME[2], hover: -1, xHover: -1
+  };
+  // the link's #anchor can ask for three trees and a colour scheme by its id (see schemes.js): #3, #k3, #midnight, #k3.midnight
+  const HASH = location.hash.slice(1).toLowerCase().split('.');
+  if (HASH.includes('3') || HASH.includes('k3')) { state.k = 3; Object.assign(state, HOME[3]); }
+  state.fitView = { azim: state.azim, elev: state.elev };
+
+  const stage = $('stage'), canvas = $('view'), ctx = canvas.getContext('2d'), tip = $('tip');
+  const xstage = $('xstage'), xcanvas = $('xview'), xctx = xcanvas.getContext('2d');
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  let D = null, W = 0, H = 0, XW = 0, XH = 0, DPR = 1, T = {}, frame = 0, lastT = 0, proj = [], buildQueued = false;
+
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+    T = {
+      vtx: g('--vtx'), edge: g('--edge'), t1: g('--t1'), t2: g('--t2'), t3: g('--t3'), ng: g('--ng'), gen: g('--gen'),
+      cell: g('--cell'), tilt: g('--tilt'), cellA: parseFloat(g('--cell-a')) || 0.5, tiltA: parseFloat(g('--tilt-a')) || 0.6,
+      diag: g('--diag'), lat: g('--lat'), hyp: g('--hyp'), hypHalo: g('--hyp-halo'), panel: g('--panel'),
+      neon: { t1: g('--t1-neon'), t2: g('--t2-neon'), t3: g('--t3-neon'), ng: g('--ng-neon'), edge: g('--edge-neon') }, ink: g('--ink'), muted: g('--muted'), focus: g('--focus'), rule: g('--rule'),
+      serif: g('--serif'), mono: g('--mono')
+    };
+  }
+
+  function cameraAt(azim, elev) {
+    const a = azim * Math.PI / 180, e = elev * Math.PI / 180;
+    const v = [Math.cos(e) * Math.cos(a), Math.cos(e) * Math.sin(a), Math.sin(e)];   // toward the viewer
+    const r = [-Math.sin(a), Math.cos(a), 0];                                         // screen right
+    const u = [v[1] * r[2] - v[2] * r[1], v[2] * r[0] - v[0] * r[2], v[0] * r[1] - v[1] * r[0]]; // screen up
+    return { v, r, u };
+  }
+
+  // the more independent the trees, the larger <Δ_X> (paths fill most of the product near 100%), so from some Difference
+  // on |X| is capped to keep the drawing responsive (about 21,000 points, edges and squares on average): measured caps
+  // by Difference (%), interpolated linearly. Two trees: from 86% for branching trees and 82% for paths, down to 140
+  // and 80 at 100%. Three trees: from 60% and 78%, down to 37 and 20 at 100%.
+  const CAP = {
+    2: {
+      trees: [[86, 300], [88, 250], [90, 210], [92, 180], [94, 160], [96, 150], [100, 140]],
+      paths: [[82, 300], [84, 230], [86, 180], [88, 140], [90, 120], [92, 100], [94, 90], [96, 80], [100, 80]]
+    },
+    3: {
+      trees: [[60, 300], [64, 282], [74, 262], [78, 236], [80, 195], [81, 168], [82, 148], [84, 113], [86, 88], [88, 70], [90, 56], [92, 45], [94, 40], [96, 37], [100, 37]],
+      paths: [[78, 300], [79, 224], [80, 170], [81, 133], [82, 109], [83, 89], [84, 75], [86, 54], [88, 39], [90, 31], [92, 25], [94, 22], [96, 21], [98, 20], [100, 20]]
+    }
+  };
+  function nCap(d = state.diff) {
+    const tab = CAP[state.k][state.shape], x = d * 100;
+    if (x <= tab[0][0]) return NMAX[state.k];
+    for (let i = 1; i < tab.length; i++) if (x <= tab[i][0]) {
+      const [x0, y0] = tab[i - 1], [x1, y1] = tab[i];
+      return Math.floor(y0 + (y1 - y0) * (x - x0) / (x1 - x0) + 1e-6);
+    }
+    return tab[tab.length - 1][1];
+  }
+  const nEff = () => Math.min(state.n[state.k], nCap());
+  const fmtDiff = d => { const v = d * 100, r = Math.round(v); return (Math.abs(v - r) < 1e-9 ? String(r) : v.toFixed(2)) + '%'; };
+
+  // what one step of Difference changed: edges of each tree, and the points of <Δ_X> gained and lost
+  function stepSummary(before, trees, hull, k, n) {
+    if (before.k !== k || before.n !== n) return { lowered: n };
+    const ek = (x, y) => (x < y ? x * n + y : y * n + x), changes = [];
+    for (let t = 0; t < k; t++) {
+      const A = new Set(before.trees[t].map(([x, y]) => ek(x, y))), B = new Set(trees[t].edges.map(([x, y]) => ek(x, y)));
+      const added = trees[t].edges.filter(([x, y]) => !A.has(ek(x, y))), removed = before.trees[t].filter(([x, y]) => !B.has(ek(x, y)));
+      if (added.length || removed.length) changes.push({ t, added, removed });
+    }
+    const code = p => p[0] + n * p[1] + (k === 3 ? n * n * p[2] : 0), old = new Set(before.V.map(code));
+    const isNew = hull.V.map(p => !old.has(code(p))), gained = isNew.filter(Boolean).length;
+    return { changes, isNew, gained, lost: before.V.length - (hull.V.length - gained) };
+  }
+
+  // ---- model ----
+  function build(before) {
+    const k = state.k, n = nEff();
+    const P = makeX(n, state.seed);
+    const trees = makeTrees(P, k, state.diff, state.seed, state.shape);
+    // cutoff: below the largest edge level, <Δ_X> is taken in each component of the product of the cutoff forests
+    const levels = edgeLevels(n, trees), maxCut = Math.max(1, ...levels.flat()), cut = Math.min(state.cut, maxCut), full = cut >= maxCut;
+    const hull = full ? medianHull(n, trees) : cutoffHull(n, trees, levels, cut);
+    const isDiag = hull.V.map(p => p.every(x => x === p[0]));
+    const diagIndex = new Int32Array(n).fill(-1);
+    hull.V.forEach((p, i) => { if (isDiag[i]) diagIndex[p[0]] = i; });
+    // edges that every tree has, as a rough measure of how alike the trees are
+    const ekey = (x, y) => (x < y ? x * n + y : y * n + x), inAll = new Map();
+    for (const tr of trees) for (const [x, y] of tr.edges) inAll.set(ekey(x, y), (inAll.get(ekey(x, y)) || 0) + 1);
+    const common = [...inAll.values()].filter(c => c === k).length;
+    // above MOVE_FROM the trees live on different copies of X, and the inset shows one row per tree
+    D = { k, n, P, trees, hull, isDiag, diagIndex, common, rows: moveOf(state.diff) > 0 && !state.pin, capped: n < state.n[k], amb: null,
+          levels, maxCut, cut, full, sepInfo: null, ambL: null };
+    D.step = before ? stepSummary(before, trees, hull, k, n) : null;
+    state.hover = -1; state.xHover = -1; tip.hidden = true;
+    layout(); syncCut(); updateText(); syncReach(); fitInset(); drawInset(); requestDraw();
+  }
+
+  function syncCut() {
+    const el = $('cut'), sub = t => `T<sub>${t + 1}</sub>`;
+    el.max = D.maxCut; el.value = D.cut; el.disabled = D.maxCut <= 1; $('cutPlay').disabled = D.maxCut <= 1;
+    $('cutOut').textContent = `${D.cut} of ${D.maxCut}`;
+    $('cutInfo').innerHTML = D.full
+      ? 'every edge kept, so this is <span class="math">⟨Δ<sub>X</sub>⟩</span> itself'
+      : (() => {                                          // e.g. keeps 5, 6 and 6 of the 19 edges of T1, T2 and T3
+        const kept = D.hull.stats.kept, list = a => a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1], c = D.hull.stats.comps;
+        return `keeps ${list(kept)} of the ${D.n - 1} edges of ${list(kept.map((m, t) => `<span class="math">${sub(t)}</span>`))}; ` +
+          `${c} block${c === 1 ? ' meets' : 's meet'} the diagonal`;
+      })();
+  }
+
+  // ‹ › and the arrow keys on the slider: move Difference to just past the previous or next change of the trees
+  function stepDiff(dir) {
+    if (!D) return;
+    const d = stepChange(D.P, D.k, state.diff, state.seed, state.shape, dir);
+    if (d === null) {
+      D.step = { none: dir > 0 ? 'No further change up to 100%' : 'No earlier change' };
+      updateText(); drawInset(); requestDraw(); return;
+    }
+    const before = { k: D.k, n: D.n, trees: D.trees.map(t => t.edges), V: D.hull.V };
+    state.diff = d; syncDiff(); syncN();
+    build(before);
+  }
+  function queueBuild() {
+    if (buildQueued) return;
+    buildQueued = true;
+    requestAnimationFrame(() => { buildQueued = false; build(); });
+  }
+
+  // the ambient box product (of the cutoff forests, below the right end of Cutoff): its vertices by their distance from
+  // <Δ_X> in it, from a breadth-first search that starts at the points of <Δ_X> (so these come first, in their order), as
+  // many whole layers as fit into AMB_BUDGET points. layerEnd[d] is the number of points at distance at most d, and
+  // complete says whether the search reached all of the blocks that meet the diagonal. Then, if the whole product fits,
+  // the vertices of the blocks that miss the diagonal (never reached by the search): allEnd is the count with them, or 0.
+  const AMB_FULL = 120, AMB_BUDGET = 30000;
+  function ambientLayers() {
+    const { k, n, hull } = D, TT = hull.T, pts = [], index = new Map(), layerEnd = [];
+    const code = p => (k === 2 ? p[0] + n * p[1] : p[0] + n * (p[1] + n * p[2]));
+    const add = p => { const c = code(p); if (!index.has(c)) { index.set(c, pts.length); pts.push(p); } };
+    hull.V.forEach(add);
+    layerEnd.push(pts.length);
+    let from = 0, complete = false;
+    for (;;) {
+      const to = pts.length;
+      for (let i = from; i < to && pts.length <= AMB_BUDGET; i++) {
+        const p = pts[i];
+        for (let t = 0; t < k; t++) for (const y of TT[t].adj[p[t]]) { const q = p.slice(); q[t] = y; add(q); }
+      }
+      if (pts.length > AMB_BUDGET) break;                   // this layer does not fit
+      if (pts.length === to) { complete = true; break; }    // every block that meets the diagonal is in
+      layerEnd.push(pts.length); from = to;
+    }
+    const total = n ** k;
+    let allEnd = 0;
+    if (complete && pts.length < total && total <= AMB_BUDGET) {
+      const p = new Array(k).fill(0);                       // the blocks that miss the diagonal
+      for (let c = 0; c < total; c++) {
+        let x = c;
+        for (let t = 0; t < k; t++) { p[t] = x % n; x = (x - p[t]) / n; }
+        add(p.slice());
+      }
+      allEnd = pts.length;
+    }
+    return { pts, index, code, layerEnd, complete, total, allEnd };
+  }
+  // the first count vertices (all within some distance of <Δ_X>, or all of them) and the product edges between them
+  function ambientAt(L, count) {
+    const { k, hull } = D, TT = hull.T, pts = L.pts.slice(0, count), edges = [];
+    for (let i = 0; i < count; i++) {
+      const p = pts[i];
+      for (let t = 0; t < k; t++) for (const y of TT[t].adj[p[t]]) {
+        if (y < p[t]) continue;
+        const q = p.slice(); q[t] = y;
+        const j = L.index.get(L.code(q));
+        if (j !== undefined && j < count) edges.push(i, j);
+      }
+    }
+    // in a cutoff: the block of the cutoff product that meets the diagonal each point lies in (numbered along the
+    // diagonal), or -1 if its block misses the diagonal
+    const bl = hull.blocks, blk = bl ? Int32Array.from(pts, p => {
+      const g = bl.index.get(p.map((x, t) => bl.label[t][x]).join(','));
+      return g === undefined ? -1 : g;
+    }) : null;
+    return { pts, edges, blk, NV: hull.V.length, other: !!blk && blk.some(g => g < 0) };
+  }
+
+  // the hyperplanes of the drawing (at cutoff D.cut) that separate components of the cutoff one lower (0: single points)
+  // and cut through none of them, with what drawing them needs: the edges they cross, the squares they cross (face index
+  // and which pair of opposite sides), and which of their edges lie in no such square (those get a mark across)
+  function ensureSep() {
+    if (D.sepInfo) return D.sepInfo;
+    const { n, trees, levels, hull } = D, below = D.cut - 1, NV = hull.V.length;
+    const kind = separatingWalls(hull, diagonalComponents(n, trees, levels, below));
+    const onEdge = Uint8Array.from(hull.edgeWall, w => (kind[w] === 1 ? 1 : 0));
+    const eIndex = new Map(), key = (a, b) => (a < b ? a * NV + b : b * NV + a);
+    hull.edges.forEach(([a, b], e) => eIndex.set(key(a, b), e));
+    const mids = [], inFace = new Uint8Array(hull.edges.length);
+    hull.faces.forEach((f, fi) => {                       // sides v–a and d–b cross one wall, a–d and b–v the other
+      const [v, a, d, b] = f.v;
+      for (const [pair, p, q, r, s] of [[0, v, a, d, b], [1, a, d, b, v]]) {
+        const e1 = eIndex.get(key(p, q)), e2 = eIndex.get(key(r, s));
+        if (!onEdge[e1]) continue;
+        mids.push([fi, pair]); inFace[e1] = 1; inFace[e2] = 1;
+      }
+    });
+    let count = 0;
+    for (const x of kind) if (x === 1) count++;
+    return (D.sepInfo = { kind, onEdge, mids, inFace, count, below });
+  }
+
+  // the product is only computed once it is faded in. Its reach is a number of steps from <Δ_X>, or Infinity for all of
+  // it; by default all of it for two trees with |X| <= AMB_FULL and one step otherwise, as before the Ambient reach
+  // slider. A number never brings in the blocks that miss the diagonal: when the cutoff leaves fewer steps than asked,
+  // it shows every block that meets the diagonal and keeps the number for later, so moving Cutoff never jumps to all.
+  const reachWanted = () => { const r = state.reach[D.k]; return r === null ? (D.k === 2 && D.n <= AMB_FULL ? Infinity : 1) : r; };
+  function ensureAmbient() {
+    if (D.amb) return;
+    if (!D.ambL) D.ambL = ambientLayers();
+    const L = D.ambL, depth = L.layerEnd.length - 1, want = reachWanted();
+    D.reachDepth = depth; D.reachAll = want === Infinity && L.allEnd > 0;
+    D.reachNow = Math.min(want, depth);
+    D.amb = ambientAt(L, D.reachAll ? L.allEnd : L.layerEnd[D.reachNow]); D.ambPos = D.amb.pts.map(D.posOf);
+    D.ambWhole = D.amb.pts.length === L.total;
+    syncReach(); updateText();
+  }
+  // the slider: 1 to the number of steps that reach every block meeting the diagonal (or as many as fit), then one more
+  // position, all, if the product has blocks that miss the diagonal and fits
+  function syncReach() {
+    const el = $('reach'), out = $('reachOut');
+    if (!D || !D.amb || state.amb === 0) {
+      const r = D ? reachWanted() : 1;
+      el.disabled = true; out.textContent = r === Infinity ? 'all' : String(r); el.title = 'Turn up Ambient to use this';
+      return;
+    }
+    const L = D.ambL, depth = D.reachDepth, extra = L.allEnd > 0 ? 1 : 0, steps = n => `${n} step${n === 1 ? '' : 's'}`;
+    el.disabled = depth + extra < 1; el.min = 1; el.max = Math.max(1, depth + extra);
+    el.value = D.reachAll ? depth + extra : Math.max(1, D.reachNow);
+    out.textContent = D.ambWhole ? 'all' : String(D.reachNow);
+    el.title = D.reachAll ? 'All of the cutoff product, including the blocks that miss the diagonal'
+      : !L.complete ? `At most ${steps(depth)} here, so that the drawing stays responsive`
+      : `Every block that meets the diagonal is within ${steps(depth)} of ⟨Δ_X⟩` + (extra ? '; the right end adds the blocks that miss it' : '');
+  }
+
+  // tree t places x along its axis by the first coordinate of its copy of X, or with Even spacing by its place in their
+  // order, one gap per place (the same order, so the same picture combinatorially, but no two points almost on top of
+  // each other); it unfolds by the second coordinate. With "Δ_X on the diagonal" every axis uses X itself, so
+  // (x, ..., x) lies on the dashed line.
+  const evenly = cs => {
+    const order = cs.map((c, i) => i).sort((a, b) => cs[a] - cs[b] || a - b), out = new Array(cs.length);
+    order.forEach((i, r) => { out[i] = r * MEAN_GAP; });
+    return out;
+  };
+  function layout() {
+    const { k, P, trees, hull } = D, kap = state.unfold * 0.8, mid = STRIP_W / 2;
+    let coord = state.pin ? trees.map(() => P.map(p => p[0])) : trees.map(tr => tr.coord);
+    if (state.even) coord = coord.map(evenly);
+    const lift = state.pin ? trees.map(() => P.map(p => p[1])) : trees.map(tr => tr.copy.map(c => c[1]));
+    const posOf = p => {
+      const q = [0, 0, 0];
+      for (let t = 0; t < k; t++) {
+        const c = coord[t][p[t]], w = (lift[t][p[t]] - mid) * kap, a = AXES[k][t], l = LIFT[k][t];
+        q[0] += c * a[0] + w * l[0]; q[1] += c * a[1] + w * l[1]; q[2] += c * a[2] + w * l[2];
+      }
+      return q;
+    };
+    D.posOf = posOf;
+    D.pos = hull.V.map(posOf);
+    if (D.amb) D.ambPos = D.amb.pts.map(posOf);
+    let lo = Infinity, hi = -Infinity;
+    for (const cs of coord) for (const c of cs) { lo = Math.min(lo, c); hi = Math.max(hi, c); }
+    lo -= 0.6; hi += 0.6;
+    D.diagEnds = k === 2 ? [[lo, lo, 0], [hi, hi, 0]] : [[lo, lo, lo], [hi, hi, hi]];
+    // centre and extent for the home view, so the drawing starts centred and fills the stage
+    const pts = D.pos.concat(D.diagEnds), mins = [Infinity, Infinity, Infinity], maxs = [-Infinity, -Infinity, -Infinity];
+    for (const p of pts) for (let i = 0; i < 3; i++) { mins[i] = Math.min(mins[i], p[i]); maxs[i] = Math.max(maxs[i], p[i]); }
+    const c = mins.map((m, i) => (m + maxs[i]) / 2), fv = state.fitView || HOME[k], { r, u } = cameraAt(fv.azim, fv.elev);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const p of pts) {
+      const d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]], x = dot(d, r), y = dot(d, u);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    const ox = (x0 + x1) / 2, oy = (y0 + y1) / 2;
+    D.center = [0, 1, 2].map(i => c[i] + ox * r[i] + oy * u[i]);
+    D.ext = [Math.max(x1 - x0, 1e-6), Math.max(y1 - y0, 1e-6)];
+    // an edge of <Δ_X> between two diagonal points can run straight through a third one (the diagonal points are
+    // collinear whenever every axis uses the same positions of X), so such an edge is drawn bent. D.bend maps the
+    // pair to its two ends in order along the diagonal.
+    D.bend = new Map();
+    const NV = hull.V.length, diag = [], along = p => p[0] + p[1] + p[2];
+    for (let i = 0; i < NV; i++) if (D.isDiag[i]) diag.push(i);
+    for (const [i, j] of hull.edges) {
+      if (!D.isDiag[i] || !D.isDiag[j]) continue;
+      const A = D.pos[i], B = D.pos[j], ab = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], L2 = dot(ab, ab);
+      if (L2 < 1e-12) continue;
+      const through = diag.some(m => {
+        if (m === i || m === j) return false;
+        const Q = D.pos[m], am = [Q[0] - A[0], Q[1] - A[1], Q[2] - A[2]], t = dot(am, ab) / L2;
+        return t > 0.01 && t < 0.99 && dot(am, am) - t * t * L2 < 0.05 ** 2;
+      });
+      if (through) D.bend.set(i < j ? i * NV + j : j * NV + i, along(A) <= along(B) ? [i, j] : [j, i]);
+    }
+  }
+
+  function updateText() {
+    const { k, n, hull } = D, st = hull.stats;
+    $('kSup').textContent = k;
+    $('stats').textContent =
+      `|X| = ${n}` + (D.capped ? ' (the most allowed at this Difference)' : '') +
+      (D.full
+        ? ` · |⟨Δ⟩| = ${st.points} · ${st.edges} edges (${st.nongrid} not product edges) · `
+        : ` · cutoff ${D.cut}: ${st.comps} component${st.comps === 1 ? '' : 's'} · ${st.points} points · ${st.edges} edges ` +
+          `(${st.multi} along several trees, ${st.long} along one tree across several of its edges) · `) +
+      `${st.squares} squares (${st.tilted} tilted)` + (k === 3 ? ` · ${st.cubes} cubes` : '') +
+      ` · ${st.walls} hyperplanes (${st.shared} cut by several trees)` +
+      ` · ${k === 2 ? 'the trees share' : 'all three trees share'} ${D.common} of ${n - 1} edges`;
+    if (state.sep) {
+      const S = ensureSep();
+      $('stats').textContent += S.below ? ` · ${S.count} of ${st.walls} hyperplanes separate components of cutoff ${S.below} and cut through none`
+        : ` · all ${S.count} hyperplanes separate points of the diagonal`;
+    }
+    // the caption above the panel: what the last ‹ › step changed, or how to use the panel
+    const S = D.step, pair = ([a, b]) => `{${Math.min(a, b) + 1}, ${Math.max(a, b) + 1}}`, count = m => m + (m === 1 ? ' point' : ' points');
+    let head = D.rows
+      ? 'Top: <span class="math">X</span> with all its trees. Below: each tree by itself, on its own copy of <span class="math">X</span>, ' +
+        (state.even ? 'whose left-to-right order places the points along its axis' : 'whose positions it uses along its axis') +
+        '; every point keeps its number. Hover a point above to see its coordinates here, or hover a point here to find it on the diagonal.'
+      : 'Top: <span class="math">X</span> with all its trees, numbered left to right. Below: each tree by itself. Hover a point above to see its coordinates here, or hover a point here to find it on the diagonal.';
+    if (S && S.none) head = S.none + '.';
+    else if (S && S.lowered) head = `Last step: |X| lowered to ${S.lowered}, the most allowed at this Difference, so this is a new point set.`;
+    else if (S) head = '<span class="step">Last step: ' + (S.changes.length ? S.changes.map(c => `<span style="color: var(--t${c.t + 1})">T<sub>${c.t + 1}</sub></span> ` +
+        c.removed.map(e => '−' + pair(e)).concat(c.added.map(e => '+' + pair(e))).join(' ')).join(', ') + ' (marked below)' : 'no tree changed') +
+      `; ⟨Δ<sub>X</sub>⟩ gains ${S.gained ? count(S.gained) + ' (ringed above)' : 'none'} and loses ${S.lost ? count(S.lost) : 'none'}.</span>`;
+    $('xhead').innerHTML = head;
+    // below the full cutoff a move along one tree can cross several of its edges, so the legend says "along"
+    const items = state.gen ? [['dot', 'var(--gen)', 'Δ<sub>X</sub>'], ['dot small', 'var(--vtx)', 'other points of ⟨Δ<sub>X</sub>⟩']]
+      : [['dot small', 'var(--vtx)', 'points of ⟨Δ<sub>X</sub>⟩']];
+    const EC = edgeColours(), oneEdge = !state.byTree && EC.ng === EC.edge;    // a scheme may draw all edges alike
+    if (state.byTree) for (let t = 0; t < k; t++) items.push(['line', EC['t' + (t + 1)], `${D.full ? 'edge of' : 'along'} T<sub>${t + 1}</sub>`]);
+    else items.push(['line', EC.edge, oneEdge ? 'edge' : D.full ? 'product edge' : 'along one tree']);
+    if (!oneEdge) items.push(['line', EC.ng, D.full ? 'not a product edge' : 'along several trees']);
+    items.push(['sq', 'var(--cell)', 'square']);
+    if (T.tilt !== T.cell || T.tiltA !== T.cellA) items.push(['sq', 'var(--tilt)', 'tilted square']);
+    if (state.pin) items.push(['dash', 'var(--diag)', 'the diagonal']);
+    if (state.sep && state.mode === 'hull') items.push(['hyp', 'var(--hyp)', D.cut > 1 ? `hyperplane separating components of cutoff ${D.cut - 1} and cutting through none` : 'hyperplane separating points of the diagonal']);
+    if (state.amb > 0 && state.pts > 0) items.push(['dot small', 'var(--lat)', D.full ? 'vertex of the product' : 'vertex of the cutoff product']);
+    if (state.amb > 0) {
+      const within = D.amb && !D.ambWhole && !D.reachAll ? (D.ambL.complete && D.reachNow === D.reachDepth
+        ? ', in the blocks that meet the diagonal' : ` within ${D.reachNow} step${D.reachNow === 1 ? '' : 's'} of ⟨Δ<sub>X</sub>⟩`) : '';
+      items.push(['line', 'var(--lat)', (D.full ? 'edge of the product' : 'edge of the cutoff product') + within]);
+      if (D.amb && D.amb.other) items.push(['line faint', 'var(--lat)', 'in a block that misses the diagonal']);
+    }
+    $('legend').innerHTML = items.map(([cls, col, label]) =>
+      `<li><span class="sw ${cls}" style="${/^(line|dash|hyp)/.test(cls) ? 'border-color' : 'background'}: ${col}"></span>${label}</li>`).join('');
+  }
+
+  // the colours of the edges of <Δ_X>, moved toward their neon versions by Vivid edges
+  const rgbOf = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  function edgeColours() {
+    const v = state.vivid, out = {};
+    for (const key of ['t1', 't2', 't3', 'ng', 'edge']) {
+      if (v === 0 || !/^#[0-9a-f]{6}$/i.test(T[key]) || !/^#[0-9a-f]{6}$/i.test(T.neon[key])) { out[key] = T[key]; continue; }
+      const a = rgbOf(T[key]), b = rgbOf(T.neon[key]);
+      out[key] = 'rgb(' + a.map((x, i) => Math.round(x + (b[i] - x) * v)).join(', ') + ')';
+    }
+    return out;
+  }
+
+  // ---- main view ----
+  function requestDraw() { if (!frame) frame = requestAnimationFrame(tick); }
+  function tick(now) {
+    frame = 0;
+    if (state.spin && !dragging) { if (lastT) state.azim -= (now - lastT) * 0.012; lastT = now; } else lastT = 0;
+    render();
+    if (state.spin) requestDraw();
+  }
+
+  const line = (c, a, b) => { c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); };
+  const circle = (c, q, rad) => { c.beginPath(); c.arc(q[0], q[1], rad, 0, 2 * Math.PI); };
+
+  // the camera turns about its target: the middle of the fitted view, unless the view was panned. s is in pixels per
+  // unit; the zoom multiplies it, up to 8 or up to where neighbouring points of X are 150 pixels apart if that is more.
+  function camera() {
+    const { v, r, u } = cameraAt(state.azim, state.elev), top = 34, bottom = 22, side = 26;
+    const s0 = Math.max(1e-6, Math.min((W - 2 * side) / D.ext[0], (H - top - bottom) / D.ext[1]));
+    const zmax = Math.max(8, 150 / (s0 * MEAN_GAP));
+    if (state.zoom > zmax) state.zoom = zmax;
+    return { v, r, u, s0, zmax, s: s0 * state.zoom, C: state.target || D.center, cx: W / 2, cy: top + (H - top - bottom) / 2 };
+  }
+  // the part [t0, t1] of the segment from A to B (screen points) that lies inside the canvas widened by m pixels
+  function clipT(A, B, m) {
+    let t0 = 0, t1 = 1;
+    const dx = B[0] - A[0], dy = B[1] - A[1];
+    for (const [p, q] of [[-dx, A[0] + m], [dx, W + m - A[0]], [-dy, A[1] + m], [dy, H + m - A[1]]]) {
+      if (p === 0) { if (q < 0) return null; continue; }
+      const r = q / p;
+      if (p < 0) { if (r > t1) return null; t0 = Math.max(t0, r); } else { if (r < t0) return null; t1 = Math.min(t1, r); }
+    }
+    return [t0, t1];
+  }
+  // control point of a bent edge from point a to point b (in order along the diagonal): it bulges to the left of that
+  // direction, by 15% of its length at the middle
+  function bendCtl(a, b) {
+    const A = proj[a], B = proj[b], dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1, h = clamp(0.3 * L, 8, 60);
+    return [(A[0] + B[0]) / 2 + dy / L * h, (A[1] + B[1]) / 2 - dx / L * h];
+  }
+  // Vivid edges: the glow around the edges of <Δ_X>, in depth slices, each drawn as one path per colour just behind the
+  // edges of its slice (much faster than a second stroke for every edge)
+  function glowPrims(hull, dmin, dmax) {
+    const NB = 16, w = Math.max(dmax - dmin, 1e-6) / NB, out = [], NV = hull.V.length, bend = D.bend;
+    for (let b = 0; b < NB; b++) out.push({ z: dmin + b * w - 0.001, k: 7, paths: {} });
+    const edgeKey = m => (m & (m - 1) ? 'ng' : state.byTree ? 't' + (32 - Math.clz32(m)) : 'edge');
+    for (const [i, j, m] of hull.edges) {
+      const A = proj[i], B = proj[j], z = (A[2] + B[2]) / 2, slot = out[Math.min(NB - 1, Math.max(0, Math.floor((z - dmin) / w)))];
+      const key = edgeKey(m), pth = slot.paths[key] || (slot.paths[key] = new Path2D());
+      pth.moveTo(A[0], A[1]);
+      const ends = bend.size ? bend.get(i < j ? i * NV + j : j * NV + i) : undefined;
+      if (!ends) pth.lineTo(B[0], B[1]);
+      else { const c = bendCtl(ends[0], ends[1]); pth.quadraticCurveTo(c[0], c[1], B[0], B[1]); }
+    }
+    return out;
+  }
+  // the ambient product in thin depth slices, each drawn as one path per kind (kind 1: blocks that miss the diagonal),
+  // sorted in with the rest of the drawing, so that it hides and is hidden by it as its depth says. It fades in with
+  // Ambient, and from 50% on its edges get stronger; its vertices fade in with it, as prominent as Vertices says. Where
+  // it coincides with <Δ_X> (vertices at its points, edges between two of them, which are its edges) it is left out,
+  // since <Δ_X> is drawn there, unless only Δ_X is shown.
+  const AMB_WEIGHT = [1, 0.4];
+  function ambientPrims(P, unit) {
+    ensureAmbient();
+    const A = D.amb, q = D.ambPos.map(P), skip = state.mode === 'hull' ? A.NV : 0;
+    const rad = clamp(unit * 0.09, 0.8, 1.8) * (0.6 + 0.8 * state.pts), cls = i => (A.blk && A.blk[i] < 0 ? 1 : 0);
+    let l0 = Infinity, l1 = -Infinity;
+    for (const p of q) { l0 = Math.min(l0, p[2]); l1 = Math.max(l1, p[2]); }
+    const NB = clamp(Math.round((l1 - l0) / (0.35 * MEAN_GAP)), 12, 96), w = Math.max(l1 - l0, 1e-6) / NB;
+    const slot = z => Math.min(NB - 1, Math.max(0, Math.floor((z - l0) / w))), out = [];
+    for (let b = 0; b < NB; b++) out.push({ z: l0 + (b + 0.5) * w, k: 4, lines: [null, null], dots: [null, null] });
+    for (let e = 0; e < A.edges.length; e += 2) {
+      const i = A.edges[e], j = A.edges[e + 1];
+      if (i < skip && j < skip) continue;
+      const a = q[i], c = q[j], B = out[slot((a[2] + c[2]) / 2)], m = cls(i);
+      const pth = B.lines[m] || (B.lines[m] = new Path2D());
+      pth.moveTo(a[0], a[1]); pth.lineTo(c[0], c[1]);
+    }
+    if (state.pts > 0) for (let i = skip; i < q.length; i++) {
+      const p = q[i], B = out[slot(p[2])], m = cls(i), pth = B.dots[m] || (B.dots[m] = new Path2D());
+      pth.moveTo(p[0] + rad, p[1]); pth.arc(p[0], p[1], rad, 0, 2 * Math.PI);
+    }
+    return out;
+  }
+
+  function render() {
+    if (!D || !W || !H) return;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const { k, hull, isDiag } = D, { v, r, u, s, C, cx, cy } = camera(), big = i => isDiag[i] && state.gen;   // drawn as a large dot
+    const P = p => {
+      const d = [p[0] - C[0], p[1] - C[1], p[2] - C[2]];
+      return [cx + s * dot(d, r), cy - s * dot(d, u), dot(d, v)];
+    };
+    proj = D.pos.map(P);
+    let dmin = Infinity, dmax = -Infinity;
+    for (const q of proj) { dmin = Math.min(dmin, q[2]); dmax = Math.max(dmax, q[2]); }
+    const span = Math.max(dmax - dmin, 1e-6), fade = z => clamp((z - dmin) / span, 0, 1);
+
+    const all = state.mode === 'hull', prims = [];
+    // the dashed diagonal, only with "Δ_X on the diagonal": otherwise each axis places X by its own tree's copy, and the
+    // line where all positions agree means nothing for the trees. Depth-sorted with the rest: dashes of 5 pixels every
+    // 11, on the part inside the canvas. (The home view still fits its ends, so the framing does not change.)
+    if (state.pin) {
+      const A = P(D.diagEnds[0]), B = P(D.diagEnds[1]);
+      const len = Math.hypot(B[0] - A[0], B[1] - A[1]), vis = clipT(A, B, 20), at = t => A.map((x, j) => x + (B[j] - x) * t);
+      if (vis && len > 0) for (let i = Math.ceil(vis[0] * len / 11); i * 11 <= vis[1] * len; i++) {
+        const a = at(i * 11 / len), b = at(Math.min(1, (i * 11 + 5) / len));
+        prims.push({ z: (a[2] + b[2]) / 2, k: 0, a, b });
+      }
+    }
+    const edgeKey = m => (m & (m - 1) ? 'ng' : state.byTree ? 't' + (32 - Math.clz32(m)) : 'edge');
+    if (all && state.squares) for (const f of hull.faces) {
+      const q = f.v.map(i => proj[i]);
+      prims.push({ z: (q[0][2] + q[1][2] + q[2][2] + q[3][2]) / 4 - 0.02, k: 1, q, t: f.tilted, v: f.v });
+    }
+    if (all) for (const [i, j, m] of hull.edges) prims.push({ z: (proj[i][2] + proj[j][2]) / 2, k: 2, i, j, m });
+    if (all && state.sep) {                                  // separating hyperplanes: bands under their edges, and the
+      const S = ensureSep();                                 // segments joining the middles of their edges in squares
+      hull.edges.forEach(([i, j], e) => { if (S.onEdge[e]) prims.push({ z: (proj[i][2] + proj[j][2]) / 2 - 0.001, k: 5, i, j, tick: !S.inFace[e] }); });
+      for (const [fi, pair] of S.mids) {
+        const [v, a, d, b] = hull.faces[fi].v, [p, q, r, s] = pair ? [a, d, b, v] : [v, a, d, b];
+        prims.push({ z: (proj[p][2] + proj[q][2] + proj[r][2] + proj[s][2]) / 4 - 0.015, k: 6, p, q, r, s });
+      }
+    }
+    for (let i = 0; i < proj.length; i++) if (all || isDiag[i]) prims.push({ z: proj[i][2] + 0.02, k: 3, i });
+    const am = state.amb, unit = s * MEAN_GAP;
+    if (am > 0) for (const b of ambientPrims(P, unit)) prims.push(b);
+    if (all && state.vivid > 0) for (const b of glowPrims(hull, dmin, dmax)) prims.push(b);
+    prims.sort((A, B) => A.z - B.z);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // the ambient product's strength; lines wider than about 1.5 pixels take much longer to draw
+    const edgeA = am <= 0.5 ? 0.45 * am : 0.225 + 1.3 * (am - 0.5), dotA = state.pts > 0 ? Math.min(1, 1.9 * am * state.pts) : 0;
+    const lw0 = clamp(unit * 0.05, 0.6, 1.1), lw1 = Math.min(1.45, lw0 * (1 + 0.9 * Math.max(0, am - 0.5)));
+    // the side from point a (the current point of the path) to point b: straight, or bent (see layout)
+    const NV = hull.V.length, bend = D.bend, sideTo = (a, b) => {
+      const ends = bend.size ? bend.get(a < b ? a * NV + b : b * NV + a) : undefined;
+      if (!ends) { ctx.lineTo(proj[b][0], proj[b][1]); return; }
+      const c = bendCtl(ends[0], ends[1]); ctx.quadraticCurveTo(c[0], c[1], proj[b][0], proj[b][1]);
+    };
+    const midOf = (a, b) => {                                // the middle of the drawn edge from a to b
+      const ends = bend.size ? bend.get(a < b ? a * NV + b : b * NV + a) : undefined, A = proj[a], B = proj[b];
+      if (!ends) return [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+      const c = bendCtl(ends[0], ends[1]);
+      return [(A[0] + 2 * c[0] + B[0]) / 4, (A[1] + 2 * c[1] + B[1]) / 4];
+    };
+
+    const lw = clamp(unit * 0.11, 0.9, 2.2), rv = clamp(unit * 0.16, 1.8, 3.6), rg = clamp(unit * 0.3, 3.2, 6.5);
+    const vv = state.vivid, EC = edgeColours();              // Vivid edges: neon colours, a glow, a little thicker
+    for (const p of prims) {
+      const f = fade(p.z);
+      if (p.k === 4) {                                      // a slice of the ambient product
+        const depth = 0.7 + 0.3 * f;
+        ctx.lineCap = 'butt';
+        for (let c = 0; c < 2; c++) {
+          const wgt = AMB_WEIGHT[c] * depth;
+          if (p.lines[c]) { ctx.globalAlpha = edgeA * wgt; ctx.strokeStyle = T.lat; ctx.lineWidth = c ? lw0 : lw1; ctx.stroke(p.lines[c]); }
+          if (p.dots[c] && dotA > 0.01) { ctx.globalAlpha = dotA * wgt; ctx.fillStyle = T.lat; ctx.fill(p.dots[c]); }
+        }
+        ctx.lineCap = 'round';
+      } else if (p.k === 0) {
+        ctx.globalAlpha = 0.45 + 0.45 * f; ctx.strokeStyle = T.diag; ctx.lineWidth = 1.1; line(ctx, p.a, p.b);
+      } else if (p.k === 1) {
+        ctx.globalAlpha = (p.t ? T.tiltA : T.cellA) * (0.8 + 0.2 * f); ctx.fillStyle = p.t ? T.tilt : T.cell;
+        ctx.beginPath(); ctx.moveTo(p.q[0][0], p.q[0][1]);
+        for (let i = 1; i <= 4; i++) sideTo(p.v[i - 1], p.v[i % 4]);
+        ctx.closePath(); ctx.fill();
+      } else if (p.k === 5) {                               // band under an edge of a separating hyperplane
+        ctx.globalAlpha = 0.75 + 0.25 * f; ctx.strokeStyle = T.hypHalo; ctx.lineWidth = lw * 3.2 + 3;
+        ctx.beginPath(); ctx.moveTo(proj[p.i][0], proj[p.i][1]); sideTo(p.i, p.j); ctx.stroke();
+        if (p.tick) {                                       // in no square: a mark across the middle of the edge
+          const m = midOf(p.i, p.j), A = proj[p.i], B = proj[p.j], L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1;
+          const nx = -(B[1] - A[1]) / L, ny = (B[0] - A[0]) / L, h = clamp(unit * 0.28, 5, 9);
+          ctx.globalAlpha = 0.8 + 0.2 * f; ctx.strokeStyle = T.hyp; ctx.lineWidth = 2;
+          line(ctx, [m[0] - nx * h, m[1] - ny * h], [m[0] + nx * h, m[1] + ny * h]);
+        }
+      } else if (p.k === 6) {                               // the hyperplane in a square: middle of one side to the other
+        ctx.globalAlpha = 0.8 + 0.2 * f; ctx.strokeStyle = T.hyp; ctx.lineWidth = clamp(unit * 0.08, 1.3, 2.2);
+        line(ctx, midOf(p.p, p.q), midOf(p.r, p.s));
+      } else if (p.k === 2) {
+        ctx.strokeStyle = EC[edgeKey(p.m)];
+        ctx.globalAlpha = (0.4 + 0.6 * f) * (1 - vv) + (0.85 + 0.15 * f) * vv; ctx.lineWidth = lw * (0.7 + 0.5 * f) * (1 + 0.5 * vv);
+        ctx.beginPath(); ctx.moveTo(proj[p.i][0], proj[p.i][1]); sideTo(p.i, p.j); ctx.stroke();
+      } else if (p.k === 7) {                               // the glow of the edges in a depth slice, one path per colour
+        ctx.lineWidth = lw * (0.7 + 0.5 * f) * (1 + 0.5 * vv) + 1 + 3 * vv;
+        for (const key in p.paths) { ctx.globalAlpha = 0.3 * vv * (0.85 + 0.15 * f); ctx.strokeStyle = EC[key]; ctx.stroke(p.paths[key]); }
+      } else {
+        const q = proj[p.i];
+        if (big(p.i)) {
+          ctx.globalAlpha = 1; circle(ctx, q, rg); ctx.fillStyle = T.gen; ctx.fill();
+          ctx.lineWidth = 1.4; ctx.strokeStyle = T.panel; ctx.stroke();
+        } else {
+          ctx.globalAlpha = 0.55 + 0.45 * f; circle(ctx, q, rv); ctx.fillStyle = T.vtx; ctx.fill();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (all && D.step && D.step.isNew) {                   // points of <Δ_X> that the last step created
+      ctx.strokeStyle = T.focus; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
+      D.step.isNew.forEach((isNew, i) => { if (isNew) { circle(ctx, proj[i], (big(i) ? rg : rv) + 2.6); ctx.stroke(); } });
+      ctx.globalAlpha = 1;
+    }
+    if (state.hover >= 0 && (all || isDiag[state.hover])) {
+      const q = proj[state.hover];
+      circle(ctx, q, (big(state.hover) ? rg : rv) + 3.5); ctx.strokeStyle = T.focus; ctx.lineWidth = 2; ctx.stroke();
+      showTip(q);
+    } else tip.hidden = true;
+    drawTripod(r, u);
+  }
+
+  function drawTripod(r, u) {
+    const ox = W - 62, oy = H - 44, L = 26;
+    ctx.save();
+    ctx.lineWidth = 1.3; ctx.font = `italic 15px ${T.serif}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const labels = [];
+    for (let t = 0; t < D.k; t++) {
+      const a = AXES[D.k][t], dx = dot(a, r) * L, dy = -dot(a, u) * L, len = Math.hypot(dx, dy);
+      const col = T['t' + (t + 1)];
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      line(ctx, [ox, oy], [ox + dx, oy + dy]);
+      if (len > 5) {
+        const ux = dx / len, uy = dy / len, ex = ox + dx, ey = oy + dy;
+        ctx.beginPath(); ctx.moveTo(ex, ey);
+        ctx.lineTo(ex - 6 * ux + 3 * uy, ey - 6 * uy - 3 * ux); ctx.lineTo(ex - 6 * ux - 3 * uy, ey - 6 * uy + 3 * ux);
+        ctx.closePath(); ctx.fill();
+        labels.push([ex + 11 * ux, ey + 11 * uy, t]);
+      } else labels.push([ox + 12, oy - 12, t]);
+    }
+    for (let pass = 0; pass < 3; pass++) for (let i = 0; i < labels.length; i++) for (let j = i + 1; j < labels.length; j++) {
+      const A = labels[i], B = labels[j], dx = B[0] - A[0], dy = B[1] - A[1], d = Math.hypot(dx, dy);
+      if (d >= 16) continue;
+      const ux = d > 0.1 ? dx / d : 1, uy = d > 0.1 ? dy / d : 0, push = (16 - d) / 2;
+      A[0] -= ux * push; A[1] -= uy * push; B[0] += ux * push; B[1] += uy * push;
+    }
+    for (const [x, y, t] of labels) { ctx.fillStyle = T['t' + (t + 1)]; ctx.fillText('T' + SUBS[t], x, y); }
+    ctx.restore();
+  }
+
+  function showTip(q) {
+    const p = D.hull.V[state.hover];
+    tip.textContent = '(' + p.map(x => x + 1).join(', ') + ')' + (D.isDiag[state.hover] ? '  diagonal' : '');
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = q[0] + 12, y = q[1] - th - 10;
+    if (x + tw > W - 6) x = q[0] - tw - 12;
+    if (y < 6) y = q[1] + 12;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+
+  function pick(x, y) {
+    let best = -1, bd = 14 * 14, bz = -Infinity;
+    for (let i = 0; i < proj.length; i++) {
+      if (state.mode !== 'hull' && !D.isDiag[i]) continue;
+      const q = proj[i], dd = (q[0] - x) ** 2 + (q[1] - y) ** 2;
+      if (dd < bd - 2 || (dd <= bd + 2 && q[2] > bz)) { best = i; bd = dd; bz = q[2]; }
+    }
+    return best;
+  }
+  function setHover(h) {
+    if (h === state.hover) return;
+    state.hover = h; if (h < 0) tip.hidden = true;
+    requestDraw(); drawInset();
+  }
+
+  // ---- inset: X with its trees ----
+  // a strip with all trees on X, then one strip per tree by itself, in the positions its axis uses: X itself, or (once
+  // the copies move apart, unless Δ_X is kept on the diagonal) the tree's own copy of X
+  const ROW_GAP = 20;
+  function uRange() {
+    let lo = Infinity, hi = -Infinity;
+    const cs = D.rows ? [D.P, ...D.trees.map(t => t.copy)] : [D.P];
+    for (const C of cs) for (const p of C) { lo = Math.min(lo, p[0]); hi = Math.max(hi, p[0]); }
+    return [lo, Math.max(hi, lo + 1e-6)];
+  }
+  // heights of the combined strip and of each tree's own strip (with its share of the gaps)
+  function insetHeights(w) {
+    const [lo, hi] = uRange(), natural = (w - 48) * STRIP_W / (hi - lo);
+    const top = Math.round(clamp(natural + 28, 90, 150)), each = Math.round(clamp(natural, 30, D.k === 2 ? 62 : 50) + ROW_GAP);
+    return { top, each, total: top + D.k * each };
+  }
+  function fitInset() {
+    if (!D) return;
+    const want = insetHeights(xstage.clientWidth).total;
+    if (Math.abs(xstage.clientHeight - want) > 1) xstage.style.height = want + 'px';
+  }
+  function drawInset() {
+    if (!D || !XW || !XH) return;
+    const { k, P, trees } = D, c = xctx, [lo, hi] = uRange();
+    c.setTransform(DPR, 0, 0, DPR, 0, 0);
+    c.clearRect(0, 0, XW, XH);
+    c.lineCap = 'round';
+    // rows[r] = { C: positions, trees drawn in it, y0/y1: vertical extent of the strip }; row 0 has all the trees
+    const left = 34, right = 14, sx = (XW - left - right) / (hi - lo), { top, each } = insetHeights(XW), rows = [];
+    rows.push({ C: P, ts: [...Array(k).keys()], y0: 14, y1: top - 14, all: true });
+    for (let t = 0; t < k; t++) {
+      const y = top + t * each;
+      rows.push({ C: D.rows ? trees[t].copy : P, ts: [t], y0: y + ROW_GAP / 2, y1: y + each - ROW_GAP / 2 });
+    }
+    D.xpos = [];
+    rows.forEach((row, r) => {
+      const sy = (row.y1 - row.y0) / STRIP_W;
+      row.X = i => left + (row.C[i][0] - lo) * sx; row.Y = i => row.y1 - row.C[i][1] * sy;
+      const { X, Y } = row;
+      if (r > 0) { c.globalAlpha = 0.5; c.strokeStyle = T.rule; c.lineWidth = 1; line(c, [8, row.y0 - ROW_GAP / 2], [XW - 8, row.y0 - ROW_GAP / 2]); }
+      if (!row.all) {
+        c.globalAlpha = 1; c.fillStyle = T['t' + (row.ts[0] + 1)]; c.font = `italic 15px ${T.serif}`;
+        c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('T' + SUBS[row.ts[0]], 16, (row.y0 + row.y1) / 2);
+      }
+      // an edge moved sideways by off pixels, with the side taken from the edge itself (smaller number first) rather
+      // than from the order a tree lists it in, so the copies of an edge shared by several trees never coincide
+      const shifted = ([a, b], off) => {
+        if (a > b) [a, b] = [b, a];
+        const dx = X(b) - X(a), dy = Y(b) - Y(a), L = Math.hypot(dx, dy) || 1, ox = -dy / L * off, oy = dx / L * off;
+        return [X(a) + ox, Y(a) + oy, X(b) + ox, Y(b) + oy];
+      };
+      for (const t of row.ts) {
+        const off = row.ts.length > 1 ? (t - (k - 1) / 2) * 2.2 : 0, lv = D.levels[t];
+        c.strokeStyle = T['t' + (t + 1)]; c.lineWidth = 1.5;
+        for (const kept of [true, false]) {           // the edges the cutoff drops are faint and dashed
+          if (!kept && D.full) break;
+          c.globalAlpha = kept ? 0.9 : 0.35; c.setLineDash(kept ? [] : [3, 3]);
+          c.beginPath();
+          trees[t].edges.forEach((e, j) => {
+            if ((D.full || lv[j] <= D.cut) !== kept) return;
+            const [x0, y0, x1, y1] = shifted(e, off); c.moveTo(x0, y0); c.lineTo(x1, y1);
+          });
+          c.stroke();
+        }
+        c.setLineDash([]);
+      }
+      // the edges the last step changed, on a halo: removed ones dashed, added ones thick
+      if (D.step && D.step.changes) for (const ch of D.step.changes) {
+        if (!row.ts.includes(ch.t)) continue;
+        const off = row.ts.length > 1 ? (ch.t - (k - 1) / 2) * 2.2 : 0, col = T['t' + (ch.t + 1)];
+        const seg = e => { const [x0, y0, x1, y1] = shifted(e, off); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+        c.strokeStyle = T.focus; c.lineWidth = 8; c.globalAlpha = 0.28; ch.removed.forEach(seg); ch.added.forEach(seg);
+        c.setLineDash([4, 3]); c.strokeStyle = col; c.lineWidth = 2; c.globalAlpha = 1; ch.removed.forEach(seg); c.setLineDash([]);
+        c.strokeStyle = col; c.lineWidth = 3; c.globalAlpha = 1; ch.added.forEach(seg);
+      }
+      c.globalAlpha = 1; c.fillStyle = T.gen;
+      const rad = row.all ? 3 : 2.6;
+      for (let i = 0; i < row.C.length; i++) { circle(c, [X(i), Y(i)], rad); c.fill(); D.xpos.push([X(i), Y(i), i]); }
+    });
+    const hp = state.hover >= 0 ? D.hull.V[state.hover] : null;
+    if (hp) {
+      const rings = new Map();                     // (row, point) -> rings already drawn there
+      c.font = `500 11px ${T.mono}`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+      hp.forEach((xi, t) => {                       // the i-th coordinate: in the strip with all trees and in T_i's own
+        for (const r of [0, t + 1]) {
+          const row = rows[r], key = r + ':' + xi, m = rings.get(key) || 0;
+          rings.set(key, m + 1);
+          circle(c, [row.X(xi), row.Y(xi)], 6.5 + 3.2 * m); c.strokeStyle = T['t' + (t + 1)]; c.lineWidth = 2; c.stroke();
+        }
+      });
+      c.fillStyle = T.ink;
+      for (const [key, m] of rings) {
+        const [r, xi] = key.split(':').map(Number), row = rows[r];
+        c.fillText(String(xi + 1), row.X(xi), row.Y(xi) - 8 - 3.2 * m);
+      }
+    }
+  }
+  function pickX(x, y) {
+    if (!D || !D.xpos) return -1;
+    let best = -1, bd = 12 * 12;
+    for (const [qx, qy, i] of D.xpos) { const dd = (qx - x) ** 2 + (qy - y) ** 2; if (dd < bd) { bd = dd; best = i; } }
+    return best;
+  }
+  xcanvas.addEventListener('pointermove', e => {
+    const rc = xcanvas.getBoundingClientRect(), i = pickX(e.clientX - rc.left, e.clientY - rc.top);
+    setHover(i >= 0 ? D.diagIndex[i] : -1);
+  });
+  xcanvas.addEventListener('pointerleave', () => setHover(-1));
+
+  // ---- camera controls ----
+  function setView(v) {
+    Object.assign(state, v); state.fitView = { azim: state.azim, elev: state.elev };
+    if (D) layout();
+    requestDraw();
+  }
+  // panning moves the target across the screen with the pointer; zooming with the wheel or a pinch keeps the point
+  // under the pointer in place
+  function panBy(dx, dy) {
+    if (!D) return;
+    const { r, u, s, C } = camera();
+    state.target = [0, 1, 2].map(i => C[i] - (dx * r[i] - dy * u[i]) / s);
+    requestDraw();
+  }
+  function zoomAt(f, x, y) {
+    if (!D) return;
+    const cam = camera(), z = clamp(state.zoom * f, 0.3, cam.zmax), g = 1 / cam.s - 1 / (cam.s0 * z);
+    const a = (x - cam.cx) * g, b = (y - cam.cy) * g;
+    state.target = [0, 1, 2].map(i => cam.C[i] + a * cam.r[i] - b * cam.u[i]);
+    state.zoom = z; requestDraw();
+  }
+  function zoomBy(f) { if (D) { state.zoom = clamp(state.zoom * f, 0.3, camera().zmax); requestDraw(); } }
+  // panning and zooming move the target within the plane through it facing the viewer, so it can end up in front of or
+  // behind what is in the middle of the view. Before turning, it moves along the line of sight (which changes nothing
+  // on screen) to the mean depth of the points drawn near the middle, or of the nearest point if none is near, so the
+  // view turns about what it is looking at.
+  function anchorTarget() {
+    if (!D || !state.target) return;
+    const { v, r, u, s, C } = camera(), R2 = (0.12 * Math.min(W, H)) ** 2, hull = state.mode === 'hull';
+    let sum = 0, cnt = 0, best = Infinity, bestDepth = 0;
+    const visit = p => {
+      const d = [p[0] - C[0], p[1] - C[1], p[2] - C[2]], x = s * dot(d, r), y = s * dot(d, u), dd = x * x + y * y, z = dot(d, v);
+      if (dd <= R2) { sum += z; cnt++; }
+      if (dd < best) { best = dd; bestDepth = z; }
+    };
+    D.pos.forEach((p, i) => { if (hull || D.isDiag[i]) visit(p); });
+    if (state.amb > 0 && D.ambPos) D.ambPos.forEach(visit);
+    if (!Number.isFinite(best)) return;
+    const depth = cnt ? sum / cnt : bestDepth;
+    state.target = [0, 1, 2].map(i => C[i] + depth * v[i]);
+  }
+  const pointers = new Map();
+  let dragging = false, panning = false, moved = 0, two = null;
+  const local = e => { const rc = canvas.getBoundingClientRect(); return [e.clientX - rc.left, e.clientY - rc.top]; };
+  const pairOf = () => {
+    const [a, b] = [...pointers.values()];
+    return { mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], dist: Math.hypot(a[0] - b[0], a[1] - b[1]) };
+  };
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button > 2) return;
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 1) {                    // Shift, the right or the middle button: pan instead of rotating
+      dragging = true; moved = 0; panning = e.pointerType === 'mouse' && (e.button !== 0 || e.shiftKey);
+      canvas.classList.add(panning ? 'panning' : 'dragging');
+      if (!panning) anchorTarget();
+    }
+    if (pointers.size === 2) two = pairOf();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId)) { if (e.pointerType === 'mouse') setHover(pick(...local(e))); return; }
+    const prev = pointers.get(e.pointerId), cur = [e.clientX, e.clientY];
+    pointers.set(e.pointerId, cur);
+    if (pointers.size === 1) {
+      const dx = cur[0] - prev[0], dy = cur[1] - prev[1];
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (panning) panBy(dx, dy);
+      else { state.azim -= dx * 0.35; state.elev = clamp(state.elev + dy * 0.35, -89.5, 89.5); }
+      setHover(-1); requestDraw();
+    } else if (pointers.size === 2) {              // two fingers: pan with their midpoint, zoom with their spread
+      const now = pairOf(), rc = canvas.getBoundingClientRect();
+      if (two) {
+        panBy(now.mid[0] - two.mid[0], now.mid[1] - two.mid[1]);
+        if (two.dist > 0) zoomAt(now.dist / two.dist, now.mid[0] - rc.left, now.mid[1] - rc.top);
+      }
+      two = now; moved += 10;
+    }
+  });
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    const tap = pointers.size === 1 && moved < 5 && e.type === 'pointerup';
+    pointers.delete(e.pointerId); two = null;
+    if (pointers.size === 1 && !panning) anchorTarget();      // the finger left on the screen turns the view
+    if (!pointers.size) { dragging = false; panning = false; canvas.classList.remove('dragging', 'panning'); }
+    if (tap) setHover(pick(...local(e)));
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !pointers.size) setHover(-1); });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+    zoomAt(Math.exp(-dy * 0.0015), ...local(e));
+  }, { passive: false });
+  canvas.addEventListener('dblclick', () => setView(HOME[state.k]));
+  canvas.addEventListener('keydown', e => {
+    const key = e.key, arrow = key.startsWith('Arrow'); let used = true;
+    if (arrow && e.shiftKey) {                            // Shift + arrows pan, like looking further that way
+      const d = 40;
+      panBy(key === 'ArrowLeft' ? d : key === 'ArrowRight' ? -d : 0, key === 'ArrowUp' ? d : key === 'ArrowDown' ? -d : 0);
+    } else if (arrow) {                                   // the arrows turn the view
+      anchorTarget();
+      if (key === 'ArrowLeft') state.azim += 6;
+      else if (key === 'ArrowRight') state.azim -= 6;
+      else if (key === 'ArrowUp') state.elev = clamp(state.elev - 6, -89.5, 89.5);
+      else state.elev = clamp(state.elev + 6, -89.5, 89.5);
+    }
+    else if (key === '+' || key === '=') zoomBy(1.15);
+    else if (key === '-' || key === '_') zoomBy(1 / 1.15);
+    else if (key === '0') { setView(HOME[state.k]); return e.preventDefault(); }
+    else used = false;
+    if (used) { e.preventDefault(); requestDraw(); }
+  });
+
+  // ---- page controls ----
+  const press = (id, on) => $(id).setAttribute('aria-pressed', String(on));
+  function syncN() {
+    const nIn = $('n'), cap = nCap();
+    nIn.max = cap; nIn.value = nEff(); $('nOut').textContent = nEff();
+    nIn.title = cap < NMAX[state.k] ? `At most ${cap} at this Difference` : '';
+  }
+  function syncDiff() { $('diff').value = state.diff * 100; $('diffOut').textContent = fmtDiff(state.diff); }
+  function syncControls() {
+    const k = state.k;
+    press('k2', k === 2); press('k3', k === 3);
+    press('shapeTrees', state.shape === 'trees'); press('shapePaths', state.shape === 'paths');
+    syncN(); syncDiff();
+    $('unfold').value = Math.round(state.unfold * 100); $('unfoldOut').textContent = Math.round(state.unfold * 100) + '%';
+    $('amb').value = Math.round(state.amb * 100); $('ambOut').textContent = Math.round(state.amb * 100) + '%';
+    $('pts').value = Math.round(state.pts * 100); $('ptsOut').textContent = Math.round(state.pts * 100) + '%';
+    $('vivid').value = Math.round(state.vivid * 100); $('vividOut').textContent = Math.round(state.vivid * 100) + '%';
+    press('genDots', state.gen);
+    $('seed').value = state.seed;
+    $('special').textContent = SPECIAL[k].label;
+  }
+  function setK(k) {
+    if (state.k === k) return;
+    state.k = k; Object.assign(state, HOME[k]); state.fitView = { ...HOME[k] }; syncControls(); build();
+  }
+  $('k2').addEventListener('click', () => setK(2));
+  $('k3').addEventListener('click', () => setK(3));
+  $('shapeTrees').addEventListener('click', () => { state.shape = 'trees'; state.target = null; syncControls(); build(); });
+  $('shapePaths').addEventListener('click', () => { state.shape = 'paths'; state.target = null; syncControls(); build(); });
+  $('n').addEventListener('input', e => { state.n[state.k] = +e.target.value; state.target = null; $('nOut').textContent = e.target.value; queueBuild(); });
+  $('diff').addEventListener('input', e => { state.diff = +e.target.value / 100; $('diffOut').textContent = fmtDiff(state.diff); syncN(); queueBuild(); });
+  $('diff').addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); stepDiff(+1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); stepDiff(-1); }
+  });
+  $('cut').addEventListener('input', e => {             // the right end means every edge, whatever the trees
+    const v = +e.target.value, max = +e.target.max;
+    stopPlay(); state.cut = v >= max ? Infinity : v; $('cutOut').textContent = `${v} of ${max}`; queueBuild();
+  });
+  // the button after Cutoff steps it up through the levels where something changes, one every PLAY_MS, starting from
+  // the bottom when it is at the top. Pressing it again, moving the slider, or anything else that rebuilds the drawing
+  // stops it.
+  const PLAY_MS = 900, PLAY_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.8 8z"/></svg>',
+    STOP_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.2 3h2.8v10H4.2zM9 3h2.8v10H9z"/></svg>';
+  let play = null;                                       // { timer, D: the drawing of the last step, shown: when drawn }
+  function syncPlay() {
+    const b = $('cutPlay');
+    b.setAttribute('aria-pressed', String(!!play)); b.innerHTML = play ? STOP_ICON : PLAY_ICON;
+    b.setAttribute('aria-label', play ? 'Stop stepping the cutoff' : 'Step the cutoff up');
+  }
+  function stopPlay() { if (!play) return; clearTimeout(play.timer); play = null; syncPlay(); }
+  function playStep() {
+    if (!play) return;
+    if (!D || D !== play.D) return stopPlay();
+    const now = performance.now();
+    if (!play.shown) play.shown = now;
+    if (now < play.shown + PLAY_MS - 10) { play.timer = setTimeout(playStep, play.shown + PLAY_MS - now); return; }
+    let next = Infinity;
+    for (const l of D.levels.flat()) if (l > D.cut && l < next) next = l;
+    if (D.full || next === Infinity) return stopPlay();
+    state.cut = next >= D.maxCut ? Infinity : next;
+    build();
+    if (D.full) return stopPlay();
+    play.D = D; play.shown = 0; play.timer = setTimeout(playStep, 0);
+  }
+  $('cutPlay').addEventListener('click', () => {
+    if (play) return stopPlay();
+    if (!D || D.maxCut <= 1) return;
+    if (D.full) { state.cut = 1; build(); }
+    play = { timer: 0, D, shown: 0 }; syncPlay(); playStep();
+  });
+  $('diffPrev').addEventListener('click', () => stepDiff(-1));
+  $('diffNext').addEventListener('click', () => stepDiff(+1));
+  $('amb').addEventListener('input', e => {
+    state.amb = e.target.value / 100; $('ambOut').textContent = e.target.value + '%';
+    if (D && state.amb > 0) ensureAmbient();
+    syncReach(); updateText(); requestDraw();
+  });
+  $('reach').addEventListener('input', e => {             // the position after the last step, if any, is all of it
+    if (!D || !D.ambL) return;
+    const v = +e.target.value;
+    state.reach[state.k] = D.ambL.allEnd > 0 && v > D.reachDepth ? Infinity : v;
+    D.amb = null; ensureAmbient(); requestDraw();
+  });
+  $('vivid').addEventListener('input', e => {
+    state.vivid = e.target.value / 100; $('vividOut').textContent = e.target.value + '%'; updateText(); requestDraw();
+  });
+  $('pts').addEventListener('input', e => {
+    state.pts = e.target.value / 100; $('ptsOut').textContent = e.target.value + '%'; updateText(); requestDraw();
+  });
+  $('unfold').addEventListener('input', e => {
+    state.unfold = e.target.value / 100; $('unfoldOut').textContent = e.target.value + '%';
+    layout(); requestDraw();
+  });
+  $('seed').addEventListener('change', e => {
+    const v = Math.round(+e.target.value);
+    if (!Number.isFinite(v) || v < 1) { e.target.value = state.seed; return; }
+    state.seed = Math.min(v, 999999); e.target.value = state.seed; state.target = null; build();
+  });
+  $('newSeed').addEventListener('click', () => { state.seed = 1 + Math.floor(Math.random() * 99999); $('seed').value = state.seed; state.target = null; build(); });
+  $('showHull').addEventListener('click', () => { state.mode = 'hull'; press('showHull', true); press('showDiag', false); requestDraw(); });
+  $('showDiag').addEventListener('click', () => { state.mode = 'diag'; press('showHull', false); press('showDiag', true); setHover(-1); requestDraw(); });
+  $('genDots').addEventListener('click', () => { state.gen = !state.gen; press('genDots', state.gen); if (D) updateText(); requestDraw(); });
+  $('squares').addEventListener('click', () => { state.squares = !state.squares; press('squares', state.squares); requestDraw(); });
+  $('byTree').addEventListener('click', () => { state.byTree = !state.byTree; press('byTree', state.byTree); updateText(); requestDraw(); });
+  $('even').addEventListener('click', () => {            // only the drawing changes: same trees, same <Δ_X>
+    state.even = !state.even; press('even', state.even); state.target = null;
+    if (D) { layout(); updateText(); requestDraw(); }
+  });
+  $('sep').addEventListener('click', () => {
+    state.sep = !state.sep; press('sep', state.sep);
+    if (D) { updateText(); requestDraw(); }
+  });
+  $('pin').addEventListener('click', () => {           // only the drawing changes: same trees, same <Δ_X>
+    state.pin = !state.pin; press('pin', state.pin);
+    if (!D) return;
+    D.rows = moveOf(state.diff) > 0 && !state.pin; state.hover = -1; tip.hidden = true;
+    layout(); updateText(); fitInset(); drawInset(); requestDraw();
+  });
+  $('spin').addEventListener('click', () => { state.spin = !state.spin; if (state.spin) anchorTarget(); press('spin', state.spin); lastT = 0; requestDraw(); });
+  $('special').addEventListener('click', () => { anchorTarget(); setView({ azim: SPECIAL[state.k].azim, elev: SPECIAL[state.k].elev }); });
+  $('reset').addEventListener('click', () => setView(HOME[state.k]));
+
+  // ---- size of the drawing: drag the grip under it (double-click it for the default), or fill the screen ----
+  const app = document.querySelector('.app'), grip = $('grip'), fullBtn = $('full'), H_KEY = 'medianHullTrees.stageHeight';
+  const store = {
+    get: key => { try { return localStorage.getItem(key); } catch (e) { return null; } },
+    set: (key, val) => { try { if (val === null) localStorage.removeItem(key); else localStorage.setItem(key, val); } catch (e) { /* no storage */ } }
+  };
+  function setStageHeight(h, save) {
+    const hMax = Math.max(420, window.innerHeight - 12);
+    if (h === null) { stage.style.height = ''; stage.classList.remove('sized'); }
+    else { stage.style.height = Math.round(clamp(h, 260, hMax)) + 'px'; stage.classList.add('sized'); }
+    grip.setAttribute('aria-valuemax', String(Math.round(hMax)));
+    grip.setAttribute('aria-valuenow', String(Math.round(stage.getBoundingClientRect().height)));
+    if (save) store.set(H_KEY, h === null ? null : String(parseFloat(stage.style.height)));
+  }
+  let gripFrom = null;
+  grip.addEventListener('pointerdown', e => {
+    e.preventDefault(); grip.setPointerCapture(e.pointerId); gripFrom = [e.clientY, stage.getBoundingClientRect().height];
+  });
+  grip.addEventListener('pointermove', e => { if (gripFrom) setStageHeight(gripFrom[1] + e.clientY - gripFrom[0], false); });
+  const gripEnd = () => { if (gripFrom) { gripFrom = null; setStageHeight(stage.getBoundingClientRect().height, true); } };
+  grip.addEventListener('pointerup', gripEnd);
+  grip.addEventListener('pointercancel', gripEnd);
+  grip.addEventListener('dblclick', () => setStageHeight(null, true));
+  grip.addEventListener('keydown', e => {
+    const h = stage.getBoundingClientRect().height;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); setStageHeight(h + (e.key === 'ArrowUp' ? -40 : 40), true); }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); setStageHeight(e.key === 'Home' ? 0 : Infinity, true); }
+  });
+  { const saved = parseFloat(store.get(H_KEY)); if (saved > 0) setStageHeight(saved, false); else setStageHeight(null, false); }
+  // full screen: just the controls and the drawing, on the whole screen when the browser allows it, else the window
+  const FULL_ICON = {
+    on: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>',
+    off: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4"/></svg>'
+  };
+  function setFull(on) {
+    if (on === app.classList.contains('full')) return;
+    app.classList.toggle('full', on); document.documentElement.classList.toggle('fullview', on);
+    fullBtn.setAttribute('aria-pressed', String(on));
+    fullBtn.setAttribute('aria-label', on ? 'Leave full screen' : 'Full screen');
+    fullBtn.title = on ? 'Leave full screen (Esc)' : 'Full screen: just the controls and the drawing (Esc to leave)';
+    fullBtn.innerHTML = on ? FULL_ICON.off : FULL_ICON.on;
+    if (on && document.fullscreenEnabled && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }
+  fullBtn.addEventListener('click', () => setFull(!app.classList.contains('full')));
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) setFull(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && app.classList.contains('full')) setFull(false); });
+
+  // ---- theme and size ----
+  readTheme();
+  const retheme = () => { readTheme(); if (D) updateText(); requestDraw(); drawInset(); };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { retheme(); syncSchemeUI(); });
+  new MutationObserver(() => { retheme(); syncSchemeUI(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts) document.fonts.ready.then(retheme);
+
+  // ---- colour schemes (schemes.js) ----
+  // A scheme sets the page's colour tokens on the root element, where they override the style sheet's light and dark
+  // values; Standard removes them again, so the page follows light or dark. Custom is the scheme that was shown with
+  // some colours changed in the Customise row: it keeps the scheme it started from and the changed colours.
+  // Neon unless this browser kept another choice (a new key, so that choices made before Neon became the default
+  // do not hide it) or the link asks for one
+  const SCHEME_KEY = 'medianHullTrees.colours', CUSTOM_KEY = 'medianHullTrees.custom', DEFAULT_SCHEME = 'neon';
+  const ROLE_VARS = { bg: '--bg', panel: '--panel', ink: '--ink', muted: '--muted', rule: '--rule', focus: '--focus', vtx: '--vtx',
+    edge: '--edge', t1: '--t1', t2: '--t2', t3: '--t3', ng: '--ng', gen: '--gen', cell: '--cell', tilt: '--tilt', diag: '--diag',
+    lat: '--lat', hyp: '--hyp' };
+  const NEON_KEYS = ['t1', 't2', 't3', 'ng', 'edge'];
+  const ALL_VARS = [...Object.values(ROLE_VARS), '--cell-a', '--tilt-a', '--hyp-halo', ...NEON_KEYS.map(k => `--${k}-neon`)];
+  const isHex = h => /^#[0-9a-f]{6}$/i.test(h);
+  const rgbHex = a => '#' + a.map(x => Math.round(clamp(x, 0, 255)).toString(16).padStart(2, '0')).join('');
+  const mixHex = (a, b, t) => { const p = rgbOf(a), q = rgbOf(b); return rgbHex(p.map((x, i) => x + (q[i] - x) * t)); };
+  const toLin = v => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const toSrgb = v => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  const lum = h => { const [r, g, b] = rgbOf(h).map(v => toLin(v / 255)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const rgbaOf = (h, a) => `rgba(${rgbOf(h).join(', ')}, ${a})`;
+  function oklch(h) {
+    const [r, g, b] = rgbOf(h).map(v => toLin(v / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, Math.hypot(A, B), Math.atan2(B, A)];
+  }
+  // the colour of OKLCH lightness L and hue hr (radians) with chroma C, or as much of it as sRGB can show
+  function fromOklch(L, C, hr) {
+    for (let c = C; ; c *= 0.96) {
+      const A = c * Math.cos(hr), B = c * Math.sin(hr);
+      const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3, m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+      const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+      const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+      if (c < 0.002 || rgb.every(v => v >= -0.001 && v <= 1.001)) return rgbHex(rgb.map(v => 255 * toSrgb(clamp(v, 0, 1))));
+    }
+  }
+  // the neon version of a colour, for Vivid edges: more chromatic, and on a dark panel fairly light; greys stay as they
+  // are (Vivid edges still gives them a glow and more weight), so that greys of different lightness stay apart
+  function neonOf(h, dark) {
+    const [L, C, hr] = oklch(h);
+    if (C < 0.03) return h;
+    return fromOklch(dark ? Math.max(L, 0.74) : Math.min(L, 0.62), Math.max(C * 1.45, C + 0.09), hr);
+  }
+  // fill in the colours a scheme may leave out
+  function complete(c, dark) {
+    const r = { ...c };
+    if (!r.muted) {                                          // secondary text: as light as reads well (4.6:1)
+      let t = 0.45;
+      do { r.muted = mixHex(c.ink, c.panel, t); t -= 0.03; } while (t > 0 && Math.min(ratio(r.muted, c.panel), ratio(r.muted, c.bg)) < 4.6);
+    }
+    r.rule = r.rule || mixHex(c.ink, c.panel, dark ? 0.86 : 0.84);
+    r.vtx = r.vtx || c.edge;
+    r.neon = {};
+    for (const k of NEON_KEYS) r.neon[k] = (c.neon && c.neon[k]) || neonOf(c[k], dark);
+    return r;
+  }
+  const schemeOf = id => SCHEMES.find(s => s.id === id && s.c);
+  const autoId = () => (lum(T.panel && isHex(T.panel) ? T.panel : '#ffffff') < 0.18 ? 'standard-dark' : 'standard-light');
+  const nameOf = id => (SCHEMES.find(s => s.id === id) || { name: id }).name;
+  // Custom: the colours changed in the Customise row on top of the scheme it started from. A background of the other
+  // kind (dark for a light scheme, or light for a dark one) starts from Standard light or dark instead, and a new
+  // background or text colour brings its own page background, secondary text and rules; the band of a hyperplane,
+  // the strength of squares and the diagonal follow the colours they go with.
+  function customColours(cu) {
+    const o = cu.over || {};
+    let B = schemeOf(cu.base) || schemeOf('standard-light');
+    const panel = isHex(o.panel) ? o.panel : B.c.panel, dark = lum(panel) < 0.18;
+    if (dark !== B.dark) B = schemeOf(dark ? 'standard-dark' : 'standard-light');
+    const c = { ...B.c, ...o };
+    if (o.panel || o.ink) {
+      c.bg = dark ? mixHex(c.panel, '#000000', 0.32) : mixHex(c.panel, c.ink, 0.05);
+      delete c.muted; delete c.rule;
+    }
+    if (o.edge) c.vtx = o.edge;
+    if (o.hyp) { c.halo = o.hyp; c.haloA = dark ? 0.8 : 0.55; }
+    if (o.cell) c.cellA = dark ? 0.3 : 0.45;
+    if (o.tilt) c.tiltA = dark ? 0.34 : 0.5;
+    if (o.lat) c.diag = o.lat;
+    c.neon = { ...(B.c.neon || {}) };
+    for (const k of Object.keys(o)) delete c.neon[k];         // changed colours get neon versions made from them
+    return { dark, c: complete(c, dark) };
+  }
+  let schemeId = 'standard', custom = null;
+  try { const cu = JSON.parse(store.get(CUSTOM_KEY)); if (cu && schemeOf(cu.base) && cu.over) custom = cu; } catch (e) { /* none kept */ }
+  function applyScheme(id, save = true) {
+    let sc = null;
+    if (id === 'custom' && custom) sc = customColours(custom);
+    else if (schemeOf(id)) { const S = schemeOf(id); sc = { dark: S.dark, c: complete(S.c, S.dark) }; }
+    else id = 'standard';
+    schemeId = id;
+    const st = document.documentElement.style;
+    for (const v of ALL_VARS) st.removeProperty(v);
+    st.removeProperty('color-scheme');
+    if (sc) {
+      const c = sc.c;
+      for (const [role, v] of Object.entries(ROLE_VARS)) st.setProperty(v, c[role]);
+      st.setProperty('--cell-a', String(c.cellA)); st.setProperty('--tilt-a', String(c.tiltA));
+      st.setProperty('--hyp-halo', rgbaOf(c.halo, c.haloA));
+      for (const k of NEON_KEYS) st.setProperty(`--${k}-neon`, c.neon[k]);
+      st.setProperty('color-scheme', sc.dark ? 'dark' : 'light');
+    }
+    if (save) store.set(SCHEME_KEY, id);
+    retheme(); syncSchemeUI();
+  }
+
+  // the list (in the groups of schemes.js, then Custom if there is one), the arrows that step through it, and the
+  // Customise row: a colour well for each main colour, showing the colours in use
+  const schemeSel = $('scheme'), customBox = $('custom');
+  const CUSTOM_ROLES = [['panel', 'Background'], ['ink', 'Text'], ['edge', 'Edges'], ['t1', 'T<sub>1</sub>'], ['t2', 'T<sub>2</sub>'],
+    ['t3', 'T<sub>3</sub>'], ['ng', 'Along several trees'], ['gen', 'Δ<sub>X</sub>'], ['cell', 'Squares'], ['tilt', 'Tilted squares'],
+    ['hyp', 'Hyperplanes'], ['lat', 'Ambient']];
+  function fillSchemes() {
+    schemeSel.textContent = '';
+    const groups = new Map();
+    for (const S of SCHEMES) {
+      if (!groups.has(S.group)) { const g = document.createElement('optgroup'); g.label = S.group; groups.set(S.group, g); schemeSel.append(g); }
+      groups.get(S.group).append(new Option(S.name, S.id));
+    }
+    if (custom) {
+      const g = document.createElement('optgroup'); g.label = 'Your own';
+      g.append(new Option(`Custom (from ${nameOf(custom.base)})`, 'custom')); schemeSel.append(g);
+    }
+  }
+  const wells = {};
+  for (const [role, label] of CUSTOM_ROLES) {
+    const lab = document.createElement('label'), well = document.createElement('input');
+    well.type = 'color'; well.dataset.role = role;
+    lab.innerHTML = `<span>${label}</span>`; lab.prepend(well); customBox.insertBefore(lab, $('customNote'));
+    wells[role] = well;
+    well.addEventListener('input', () => {
+      if (schemeId !== 'custom' || !custom) {                // start a Custom scheme from the one shown
+        custom = { base: schemeId === 'standard' ? autoId() : schemeId, over: {} };
+        fillSchemes();
+      }
+      custom.over[role] = well.value.toLowerCase();
+      store.set(CUSTOM_KEY, JSON.stringify(custom));
+      applyScheme('custom');
+    });
+  }
+  function syncSchemeUI() {
+    if (!schemeSel.querySelector(`option[value="${schemeId}"]`)) fillSchemes();
+    schemeSel.value = schemeId;
+    const shown = { panel: T.panel, ink: T.ink, edge: T.edge, t1: T.t1, t2: T.t2, t3: T.t3, ng: T.ng, gen: T.gen, cell: T.cell, tilt: T.tilt, hyp: T.hyp, lat: T.lat };
+    for (const [role, well] of Object.entries(wells)) if (isHex(shown[role])) well.value = shown[role].toLowerCase();
+  }
+  const schemeOrder = () => [...SCHEMES.map(s => s.id), ...(custom ? ['custom'] : [])];
+  function stepScheme(d) { const ids = schemeOrder(), i = Math.max(0, ids.indexOf(schemeId)); applyScheme(ids[(i + d + ids.length) % ids.length]); }
+  schemeSel.addEventListener('change', () => applyScheme(schemeSel.value));
+  $('schemePrev').addEventListener('click', () => stepScheme(-1));
+  $('schemeNext').addEventListener('click', () => stepScheme(1));
+  $('customise').addEventListener('click', () => {
+    const open = customBox.hidden; customBox.hidden = !open; press('customise', open);
+  });
+  fillSchemes();
+  {
+    const asked = HASH.find(h => (h === 'custom' ? custom : schemeOf(h) || h === 'standard'));
+    applyScheme(asked || store.get(SCHEME_KEY) || DEFAULT_SCHEME, false);
+  }
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+    W = stage.clientWidth; H = stage.clientHeight; XW = xstage.clientWidth; XH = xstage.clientHeight;   // inside the borders, like the canvases
+    canvas.width = Math.max(1, Math.round(W * DPR)); canvas.height = Math.max(1, Math.round(H * DPR));
+    xcanvas.width = Math.max(1, Math.round(XW * DPR)); xcanvas.height = Math.max(1, Math.round(XH * DPR));
+    fitInset(); requestDraw(); drawInset();
+  }
+  const ro = new ResizeObserver(resize);
+  ro.observe(stage); ro.observe(xstage);
+
+  syncControls();
+  build();
+  resize();
+})();
+</script>
+</body>
+</html>
