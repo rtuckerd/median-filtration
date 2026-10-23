@@ -206,7 +206,7 @@
   .app.full {
     position: fixed; inset: 0; z-index: 20; max-width: none; height: auto; margin: 0; padding: 10px 16px; background: var(--bg);
   }
-  .app.full > header, .app.full > .xpanel, .app.full > footer, .app.full .grip { display: none; }
+  .app.full > header, .app.full > .guide, .app.full > .xpanel, .app.full > footer, .app.full .grip { display: none; }
   .app.full .stage { flex: 1 1 auto !important; height: auto !important; min-height: 0 !important; }
   html.fullview, html.fullview body { overflow: hidden; }
   .hint .coarse { display: none; }
@@ -1044,6 +1044,10 @@ const SCHEMES = [
   // the link's #anchor can ask for three trees and a colour scheme by its id (see schemes.js): #3, #k3, #midnight, #k3.midnight
   const HASH = location.hash.slice(1).toLowerCase().split('.');
   if (HASH.includes('3') || HASH.includes('k3')) { state.k = 3; Object.assign(state, HOME[3]); }
+  // the first time three trees are shown (switching to them, or a link asking for them), Ambient drops to 20%: with
+  // three trees the whole product crowds the drawing. After that it stays wherever it is set.
+  let shown3 = state.k === 3;
+  if (shown3) state.amb = 0.2;
   state.fitView = { azim: state.azim, elev: state.elev };
 
   const stage = $('stage'), canvas = $('view'), ctx = canvas.getContext('2d'), tip = $('tip');
@@ -1912,7 +1916,9 @@ const SCHEMES = [
   }
   function setK(k) {
     if (state.k === k) return;
-    state.k = k; Object.assign(state, HOME[k]); state.fitView = { ...HOME[k] }; syncControls(); build();
+    state.k = k; Object.assign(state, HOME[k]); state.fitView = { ...HOME[k] };
+    if (k === 3 && !shown3) { shown3 = true; state.amb = 0.2; }
+    syncControls(); build();
   }
   $('k2').addEventListener('click', () => setK(2));
   $('k3').addEventListener('click', () => setK(3));
